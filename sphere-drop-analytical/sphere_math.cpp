@@ -172,6 +172,20 @@ void vec3::equals(vec3 vec){
 	z = vec.z;
 	return ;
 }
+
+vec3 vec3::operator+(vec3 b&){
+    vec3 sum(	this->x+b.x,
+		this->y+b.y,
+		this->z+b.z);
+    return sum;
+}
+
+vec3 vec3::operator-(vec3 b&){
+    vec3 diff(	this->x-b.x,
+		this->y-b.y,
+		this->z-b.z);
+    return diff;
+}
 //double intersect_correct(int i, int j)
 //{
 //    //The target distnance between the two spheres: i.e. the sum of the radii
