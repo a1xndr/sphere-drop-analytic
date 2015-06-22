@@ -186,6 +186,12 @@ vec3 vec3::operator-(vec3 b&){
 		this->z-b.z);
     return diff;
 }
+vec3 vec3::scalar_multiply(double b){
+    vec3 mult(	this->x*b,
+		this->y*b,
+		this->z*b);
+    return ;
+}
 //double intersect_correct(int i, int j)
 //{
 //    //The target distnance between the two spheres: i.e. the sum of the radii

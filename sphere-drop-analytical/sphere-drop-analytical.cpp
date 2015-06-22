@@ -204,6 +204,9 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
     //Basis vector w: u x v
     vec3 w = cross_product(w,v);
 
+    vec3 c2_omega = c2_c3*(dot_product(spheres[j].pos-s->pos,spheres[k].pos-spheres[j].pos)
+	 /pow(c2c3.magnitude(),2));
+
 }
 
 int main()
