@@ -194,7 +194,7 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
 		spheres[k].pos.z - spheres[j].pos.z);   
     
     // Basis vector u: Normalized vector c2c3
-    vec3 u(c2c3.x/c2c3.magnitude(), c2c3.y/c2c3.magnitude(), c2c3.z/c2c3.magnitude);
+    vec3 u(c2c3.x/c2c3.magnitude(), c2c3.y/c2c3.magnitude(), c2c3.z/c2c3.magnitude());
     
     // Basis vector v: k-(k.u)u
     vec3 v( 0-(u.z)*u.x,
@@ -204,14 +204,53 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
     //Basis vector w: u x v
     vec3 w = cross_product(w,v);
 
-    vec3 c12_omega = scalar_multiply(c2_c3(dot_product(spheres[j].pos-s->pos,spheres[k].pos-spheres[j].pos)
-	 /pow(c2c3.magnitude(),2)));
-
-    std::vector<int> intersects = check_intersects(c12_omega + spheres[j].radius,
+    vec3 c2_omega = c2c3.scalar_multiply(
+		dot_product(spheres[j].pos-s->pos,spheres[k].pos-spheres[j].pos)
+		/pow(c2c3.magnitude(),2));
+    vec3 omega = spheres[j].pos + c2_omega; 
+    vec3 omega_s = s->pos - omega;
+    std::vector<int> intersects = check_intersects(omega_s.magnitude() + spheres[j].radius,
     		spheres[j].pos, i ,1,1,1);
 
-
-
+    double beta = acos(dot_product(omega_s,v)/dot_product(omega,s->pos));
+    int sign_coef = 1;
+    if(beta<0)sign_coef=-1;
+    double T=0;
+    int collision_index=-1;
+    for(int l=0; l<intersects.size(); l++){
+	if(intersects[l]==j)continue;
+	//Set up the variables exactly as detailed in the paper.
+	vec3 omega_c = spheres[intersects[l]].pos - omega;
+	vec3 cprime(dot_product(omega_c, u),dot_product(omega_c, v),dot_product(omega_c, w));
+	double K1 	= cprime.y;
+	double K2 	= cprime.z*sign_coef;
+	double K3 	= (pow(cprime.x,2) + pow(cprime.y,2) + pow(cprime.z,2) + pow(dot_product(omega,s->pos),2) - pow(s->radius+spheres[intersects[l]].radius,2))/(2*dot_product(omega,s->pos));
+    
+	double D = pow(2*K1*K3,2)-4*(pow(K1,2)+pow(K2,2))*(pow(K3,2)-pow(K2,2));
+	if(D<0)continue;
+	double T1 = (2*K1*K3 + pow(D,0.5))/(2*(pow(K1,2)+pow(K2,2)));
+	double T2 = (2*K1*K3 - pow(D,0.5))/(2*(pow(K1,2)+pow(K2,2)));
+	if(K2*(K3-K1*T1)<0)T1=T2;
+	if(K2*(K3-K1*T2)<0)T2=T1;
+	if(K2*(K3-K1*T2)<0)continue;
+	double sol = std::max(T1,T2);
+	if(sol>T){
+	    collision_index=intersects[l];
+	    T = sol;
+	}	
+    }
+    	double betaprime = sign_coef * acos(T);
+	vec3 sprime(0, dot_product(omega,s->pos) * cos(betaprime), dot_product(omega,s->pos)*sin(betaprime));
+	s->pos.x =  u.x * sprime.x + 
+		    v.x * sprime.y +
+		    w.x * sprime.z; 
+	s->pos.y =  u.y * sprime.x + 
+		    v.y * sprime.y +
+		    w.y * sprime.z; 
+	s->pos.z =  u.z * sprime.x + 
+		    v.z* sprime.y +
+		    w.z * sprime.z; 
+	return collision_index;
 }
 
 int main()
