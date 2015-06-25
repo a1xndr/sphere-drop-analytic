@@ -189,9 +189,7 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
     //We define a new coordinate basis u, v, w
 
     //Vector between two spheres of contact
-    vec3 c2c3(spheres[k].pos.x - spheres[j].pos.x,
-		spheres[k].pos.y - spheres[j].pos.y,
-		spheres[k].pos.z - spheres[j].pos.z);   
+    vec3 c2c3 = spheres[k].pos - spheres[j].pos;   
     
     // Basis vector u: Normalized vector c2c3
     vec3 u(c2c3.x/c2c3.magnitude(), c2c3.y/c2c3.magnitude(), c2c3.z/c2c3.magnitude());
@@ -202,29 +200,40 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
 	    1-(u.z)*u.z);
 
     //Basis vector w: u x v
-    vec3 w = cross_product(w,v);
+    vec3 w = cross_product(u,v);
 
     vec3 c2_omega = c2c3.scalar_multiply(
 		dot_product(spheres[j].pos-s->pos,spheres[k].pos-spheres[j].pos)
 		/pow(c2c3.magnitude(),2));
-    vec3 omega = spheres[j].pos + c2_omega; 
+    vec3 c2c3_norm(c2c3.x/c2c3.magnitude(), c2c3.y/c2c3.magnitude(), c2c3.z/c2c3.magnitude());
+    vec3 omega = c2c3_norm.scalar_multiply(dot_product(s->pos,c2c3_norm)); 
     vec3 omega_s = s->pos - omega;
     std::vector<int> intersects = check_intersects(omega_s.magnitude() + spheres[j].radius,
     		spheres[j].pos, i ,1,1,1);
 
     double beta = acos(dot_product(omega_s,v)/dot_product(omega,s->pos));
+    if(dot_product(omega_s,w)<0)
+    {
+	beta = beta*-1;
+    }
     int sign_coef = 1;
     if(beta<0)sign_coef=-1;
     double T=0;
     int collision_index=-1;
-    for(int l=0; l<intersects.size(); l++){
-	if(intersects[l]==j)continue;
+    int false_values=0;
+    for(int l=0; l<intersects.size(); l++)
+    {
+	if(intersects[l]==j || intersects[l]==k)
+	{
+	    false_values++;
+	    continue;
+	}
 	//Set up the variables exactly as detailed in the paper.
 	vec3 omega_c = spheres[intersects[l]].pos - omega;
 	vec3 cprime(dot_product(omega_c, u),dot_product(omega_c, v),dot_product(omega_c, w));
 	double K1 	= cprime.y;
 	double K2 	= cprime.z*sign_coef;
-	double K3 	= (pow(cprime.x,2) + pow(cprime.y,2) + pow(cprime.z,2) + pow(dot_product(omega,s->pos),2) - pow(s->radius+spheres[intersects[l]].radius,2))/(2*dot_product(omega,s->pos));
+	double K3 	= (pow(cprime.x,2) + pow(cprime.y,2) + pow(cprime.z,2) + pow(omega_s.magnitude(),2) - pow(s->radius+spheres[intersects[l]].radius,2))/(2*omega_s.magnitude());
     
 	double D = pow(2*K1*K3,2)-4*(pow(K1,2)+pow(K2,2))*(pow(K3,2)-pow(K2,2));
 	if(D<0)continue;
@@ -239,6 +248,20 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
 	    T = sol;
 	}	
     }
+    if(intersects.size()-false_values==0)
+    {
+	vec3 omega_s_prime = v.scalar_multiply(omega_s.magnitude());
+	s->pos.equals(omega+omega_s_prime);
+	if(s->pos.z<=std::min(spheres[k].pos.z,spheres[j].pos.z))
+	{
+	    collision_index = -1;
+	}
+	else if(s->pos.z>spheres[k].pos.z){
+	    collision_index = k;
+	}
+    }
+    else
+    {
     	double betaprime = sign_coef * acos(T);
 	vec3 sprime(0, dot_product(omega,s->pos) * cos(betaprime), dot_product(omega,s->pos)*sin(betaprime));
 	s->pos.x =  u.x * sprime.x + 
@@ -250,7 +273,8 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
 	s->pos.z =  u.z * sprime.x + 
 		    v.z* sprime.y +
 		    w.z * sprime.z; 
-	return collision_index;
+    }
+    return collision_index;
 }
 
 int main()
@@ -266,7 +290,7 @@ int main()
 	double volume=0;
 	
 	//Loop to attempt placement of NUM_SPHERES spheres
-	for(int i=0; i < 10; i++)
+	for(int i=0; i < 100; i++)
 	{
 		if(i==15000){
 
@@ -405,11 +429,18 @@ int main()
 						break;
 					}
 					if(collision!=-1){
-					    state=3;
-					    contact[2]=collision;
+					    if(collision==contact[1]){
+						state = 1;
+						contact[0]=contact[1];
+						contact[1]=-1;
+					    }
+					    else{
+						state=3;
+						contact[2]=collision;
+					    }
 					}
 					else{
-						state=0;
+					    state=0;
 					    contact[0]=-1;
 					    contact[1]=-1;
 					}
@@ -462,7 +493,7 @@ int main()
 	    << volume/(X_MAX*Y_MAX*Z_MAX) << std::endl;//*/
 		}
 	}
-	for(int i=0; i<10; i++){
+	for(int i=0; i<100; i++){
 		std::cout   <<  spheres[i].radius << " "
 			    << spheres[i].pos.x
 			    <<  " " <<spheres[i].pos.y
