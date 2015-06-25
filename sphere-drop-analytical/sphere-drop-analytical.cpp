@@ -134,7 +134,7 @@ int single_sphere_roll(sphere *s,int j, int i){
     double newphi=0;
     double T = cos(0);
     for(int l=0; l<intersects.size(); l++){
-    	if(intersects[l]==j)continue;
+    	if(intersects[l]==j || intersects[l]==i)continue;
     	//Set up the variables exactly as detailed in the paper.
     	double Wx 	= (spheres[intersects[l]].pos.x-spheres[j].pos.x)/(s->radius+spheres[j].radius);
     	double Wy 	= (spheres[intersects[l]].pos.y-spheres[j].pos.y)/(s->radius+spheres[j].radius);
@@ -190,7 +190,7 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
 
     //Vector between two spheres of contact
     vec3 c2c3 = spheres[k].pos - spheres[j].pos;   
-    
+
     // Basis vector u: Normalized vector c2c3
     vec3 u(c2c3.x/c2c3.magnitude(), c2c3.y/c2c3.magnitude(), c2c3.z/c2c3.magnitude());
     
@@ -248,9 +248,9 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
 	    T = sol;
 	}	
     }
-    if(intersects.size()-false_values==0)
+    if(T==0)
     {
-	vec3 omega_s_prime = v.scalar_multiply(omega_s.magnitude());
+	vec3 omega_s_prime = v.scalar_multiply(-omega_s.magnitude());
 	s->pos.equals(omega+omega_s_prime);
 	if(s->pos.z<=std::min(spheres[k].pos.z,spheres[j].pos.z))
 	{
@@ -290,7 +290,7 @@ int main()
 	double volume=0;
 	
 	//Loop to attempt placement of NUM_SPHERES spheres
-	for(int i=0; i < 100; i++)
+	for(int i=0; i < 100000; i++)
 	{
 		if(i==15000){
 
@@ -351,12 +351,17 @@ int main()
 					s.pos.y=5.3;
 					s.pos.z=Z_MAX-s.radius;
 				}
+				if(i==125){
+					int j=2;
+				}
 			    bool lodged = false;
 			    int state = 0;
 			    int contact[3]={-1,-1,-1};
 			    int collision;
 			    //Logic to iterate between modes by interpreting the
 			    //return codes
+			    std::cout   << "NEW SPHERE: "
+			    		<< i << std::endl;
 			    std::cout   << "INIT:"
 			    		<< s.pos.x << " "
 						<< s.pos.y << " "
@@ -377,7 +382,7 @@ int main()
 					    s.pos.z-radius+SMIDGE<0  ||
 					    s.pos.x+radius-SMIDGE>10 || 
 					    s.pos.y+radius-SMIDGE>10 || 
-					    s.pos.z+radius-SMIDGE>10){						state=3;
+					    s.pos.z+radius-SMIDGE>10){
 						state=3;
 						break;
 					}
