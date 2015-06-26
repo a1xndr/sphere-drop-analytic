@@ -78,6 +78,7 @@ std::vector<int> check_intersects(double radius, vec3 pos, double i, bool fastx,
  * =====================================================================================
  */
 int free_fall(sphere *s, int i){
+    std::cout << "Entering FF" <<std::endl;
     double z_max = 0;
     int c_index = -1;
     for(int j=i-1; j>=0; j--)
@@ -104,6 +105,7 @@ int free_fall(sphere *s, int i){
     if(c_index!=-1 && s->pos.z>z_max){
     	s->pos.z= z_max;
         return c_index;
+    std::cout << "Hit against: " << c_index <<std::endl;
     }
     else {s->pos.z = s->radius;}
     return -1;
@@ -130,7 +132,11 @@ int single_sphere_roll(sphere *s,int j, int i){
     double r_traj 	= s->radius + spheres[j].radius;
     double phi 		= asin((s->pos.z-spheres[j].pos.z)/r_traj);
     double theta 	= atan2((s->pos.y-spheres[j].pos.y),(s->pos.x-spheres[j].pos.x));
+    vec3 u( cos(theta),	sin(theta), 0);
+    vec3 v(-sin(theta), cos(theta), 0);
+    vec3 w(0,0,1);
 
+    double maxsol = 1;
     double newphi=0;
     double T = cos(0);
     for(int l=0; l<intersects.size(); l++){
@@ -154,23 +160,31 @@ int single_sphere_roll(sphere *s,int j, int i){
     	if(K2*(K3-K1*T2)<0)T2=T1;
     	if(K2*(K3-K1*T2)<0)continue;
 
+	double sol = std::min(T1, T2);
     	double ang1 = acos(T1);
     	double ang2 = acos(T2);
     	double ang;
-    	if(spheres[intersects[l]].pos.z<spheres[j].pos.z){
-    		ang=std::min(ang1, ang2);
-    	}
-    	else{
-    		ang=std::max(ang1, ang2);
-    	}
-    	if(ang>newphi && ang<phi)
-    	{
-    		collision = intersects[l];
-        	newphi=ang;
-    	}
-    	newphi = ang;
+
+	if(sol<maxsol && sol>0 && sol > cos(phi)){
+	    maxsol = sol;
+	    collision = intersects[l];
+	}
+//    	if(spheres[intersects[l]].pos.z<spheres[j].pos.z){
+//    		ang=std::min(ang1, ang2);
+//    	}
+//    	else{
+//    		ang=std::max(ang1, ang2);
+//    	}
+//    	if(ang>newphi && ang<phi)
+//    	{
+//    		collision = intersects[l];
+//        	newphi=ang;
+//    	}
+//    	newphi = ang;
     }
+    newphi = acos(maxsol); 
     std::cout <<"phi is:" <<newphi <<std::endl;
+    std::cout << "hit against: " << collision <<std::endl;
     s->pos.x = spheres[j].pos.x + r_traj*cos(theta)*cos(newphi);
     s->pos.y = spheres[j].pos.y + r_traj*sin(theta)*cos(newphi);
     s->pos.z = spheres[j].pos.z + r_traj*sin(newphi);
@@ -233,7 +247,7 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
 	vec3 cprime(dot_product(omega_c, u),dot_product(omega_c, v),dot_product(omega_c, w));
 	double K1 	= cprime.y;
 	double K2 	= cprime.z*sign_coef;
-	double K3 	= (pow(cprime.x,2) + pow(cprime.y,2) + pow(cprime.z,2) + pow(omega_s.magnitude(),2) - pow(s->radius+spheres[intersects[l]].radius,2))/(2*omega_s.magnitude());
+	double K3 	= (pow(cprime.x,2) + pow(cprime.y,2) + pow(cprime.z,2) + pow(omega_s.magnitude(),2) -	  pow(s->radius+spheres[intersects[l]].radius,2))/(2*omega_s.magnitude());
     
 	double D = pow(2*K1*K3,2)-4*(pow(K1,2)+pow(K2,2))*(pow(K3,2)-pow(K2,2));
 	if(D<0)continue;
@@ -290,7 +304,7 @@ int main()
 	double volume=0;
 	
 	//Loop to attempt placement of NUM_SPHERES spheres
-	for(int i=0; i < 100000; i++)
+	for(int i=0; i < 500; i++)
 	{
 		if(i==15000){
 
@@ -324,7 +338,7 @@ int main()
 			if(!posfail)
 			{
 			    sphere s;
-			s.radius = radius;
+			    s.radius = radius;
 			    s.pos.equals(pos);
 
 				if(i==0){
@@ -334,7 +348,7 @@ int main()
 					s.pos.z=Z_MAX-s.radius;
 				}
 				if(i==1){
-					s.radius = 3;
+					s.radius = 2;
 					s.pos.x=6;
 					s.pos.y=6;
 					s.pos.z=Z_MAX-s.radius;
@@ -368,6 +382,9 @@ int main()
 						<< s.pos.z<< std::endl;
 			    while(!lodged)
 			    {
+				if(check_intersect(s.radius, s.pos, i, 1, 1, 1 )!=-1){
+				    std::cout << "Something Bad Just Happened" << std::endl;
+				}
 				switch(state)
 				{
 
@@ -426,10 +443,8 @@ int main()
 							<< s.pos.z<< std::endl;
 					if( s.pos.x-radius+SMIDGE<0  || 
 					    s.pos.y-radius+SMIDGE<0  ||
-					    s.pos.z-radius+SMIDGE<0  ||
 					    s.pos.x+radius-SMIDGE>10 || 
-					    s.pos.y+radius-SMIDGE>10 || 
-					    s.pos.z+radius-SMIDGE>10){	
+					    s.pos.y+radius-SMIDGE>10){	
 						state=3;
 						break;
 					}
@@ -498,7 +513,8 @@ int main()
 	    << volume/(X_MAX*Y_MAX*Z_MAX) << std::endl;//*/
 		}
 	}
-	for(int i=0; i<100; i++){
+	std::cout << "===================" << std::endl;
+	for(int i=0; i<5000; i++){
 		std::cout   <<  spheres[i].radius << " "
 			    << spheres[i].pos.x
 			    <<  " " <<spheres[i].pos.y
