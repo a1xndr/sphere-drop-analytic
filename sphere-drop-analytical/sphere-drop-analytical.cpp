@@ -77,7 +77,7 @@ std::vector<int> check_intersects(double radius, vec3 pos, double i, bool fastx,
  *  collision with a sphere of largest z.
  * =====================================================================================
  */
-int free_fall(struct sphere *s, int i){
+int free_fall(sphere *s, int i){
     double z_max = 0;
     int c_index = -1;
     for(int j=i-1; j>=0; j--)
@@ -92,7 +92,7 @@ int free_fall(struct sphere *s, int i){
 			double z_col=spheres[j].pos.z +pow(pow(spheres[j].radius +  s->radius , 2)
 					- pow(spheres[j].pos.x -  s->pos.x , 2) -
 					pow(spheres[j].pos.y -  s->pos.y , 2), 0.5);
-			if(z_col > z_max)
+			if(z_col > z_max && s->pos.z>z_max)
 			{
 				z_max = z_col;
 				c_index = j;
@@ -163,7 +163,7 @@ int single_sphere_roll(sphere *s,int j, int i){
     	else{
     		ang=std::max(ang1, ang2);
     	}
-    	if(ang>newphi)
+    	if(ang>newphi && ang<phi)
     	{
     		collision = intersects[l];
         	newphi=ang;
@@ -351,7 +351,7 @@ int main()
 					s.pos.y=5.3;
 					s.pos.z=Z_MAX-s.radius;
 				}
-				if(i==125){
+				if(i==168){
 					int j=2;
 				}
 			    bool lodged = false;
