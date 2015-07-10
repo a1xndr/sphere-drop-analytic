@@ -227,6 +227,7 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
     std::vector<int> intersects = check_intersects(omega_s.magnitude() + spheres[j].radius,
     		spheres[j].pos, i ,1,1,1);
 
+    double beta_min = acos(w.x);
     double beta = acos(dot_product(omega_s,v)/dot_product(omega,s->pos));
     if(dot_product(omega_s,w)<0)
     {
@@ -234,11 +235,13 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
     }
     int sign_coef = 1;
     if(beta<0)sign_coef=-1;
-    double T=0;
+    std::cout << "sign_coef is " << sign_coef << std::endl;
+    double T=1;
     int collision_index=-1;
     int false_values=0;
     for(int l=0; l<intersects.size(); l++)
     {
+	//if(i==6) continue;
 	if(intersects[l]==j || intersects[l]==k)
 	{
 	    false_values++;
@@ -264,16 +267,58 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
 	if(D<0)continue;
 	double T1 = (2*K1*K3 + pow(D,0.5))/(2*(pow(K1,2)+pow(K2,2)));
 	double T2 = (2*K1*K3 - pow(D,0.5))/(2*(pow(K1,2)+pow(K2,2)));
+	std::cout   << "Found solutions with sphere: " << intersects[l] <<
+			" with T1 corresponding to "<< T1 <<" and T2 to " <<
+		       T2 << std::endl;
+	std::cout << "Checking sphere " << intersects[l] << std::endl;	
+    	double betaprime = sign_coef * acos(T1);
+	vec3 sprime(0, omega_s.magnitude() * cos(betaprime), omega_s.magnitude()*sin(betaprime));
+	vec3 omega_s_prime( u.x * sprime.x + 
+			    v.x * sprime.y +
+			    w.x * sprime.z, 
+			    
+			    u.y * sprime.x + 
+			    v.y * sprime.y +
+			    w.y * sprime.z, 
+
+			    u.z * sprime.x + 
+			    v.z * sprime.y +
+			    w.z * sprime.z);
+	vec3 s_prime=omega+omega_s_prime;
+
+	std::cout <<"T1: "<< T1 <<" | "<< s_prime.x << " "<< s_prime.y << " " << s_prime.z<< std::endl;
+    	betaprime = sign_coef * acos(T2);
+	vec3 sprime2(0, omega_s.magnitude() * cos(betaprime), omega_s.magnitude()*sin(betaprime));
+	vec3 omega_s_prime2( u.x * sprime2.x + 
+			    v.x * sprime2.y +
+			    w.x * sprime2.z, 
+			    
+			    u.y * sprime2.x + 
+			    v.y * sprime2.y +
+			    w.y * sprime2.z, 
+
+			    u.z * sprime2.x + 
+			    v.z * sprime2.y +
+			    w.z * sprime2.z);
+	vec3 s_prime2=omega+omega_s_prime2;
+	std::cout <<"T2: "<< T2 <<" | "<< s_prime2.x << " "<< s_prime2.y << " " << s_prime2.z<< std::endl;
+	//double sol = std::max(T1,T2);
 	if(K2*(K3-K1*T1)<0)T1=T2;
 	if(K2*(K3-K1*T2)<0)T2=T1;
 	if(K2*(K3-K1*T2)<0)continue;
-	double sol = std::max(T1,T2);
-	if(sol>T){
+	double sol;
+	if(abs(T1)<abs(T2)){
+	    sol=T2;
+	}	    
+	else{
+	    sol=T1;
+	}	    
+	if(abs(sol)<abs(T)){
 	    collision_index=intersects[l];
 	    T = sol;
 	}	
     }
-    if(T==0)
+    if(T==1)
     {
 	vec3 omega_s_prime = v.scalar_multiply(-omega_s.magnitude());
 	s->pos.equals(omega+omega_s_prime);
@@ -287,7 +332,10 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
     }
     else
     {
+	std::cout   << "We will use T=" << T <<
+			" corresponding to "<< acos(T) << std::endl;
     	double betaprime = sign_coef * acos(T);
+	if(i==6)betaprime=beta_min;
 	vec3 sprime(0, omega_s.magnitude() * cos(betaprime), omega_s.magnitude()*sin(betaprime));
 	vec3 omega_s_prime( u.x * sprime.x + 
 			    v.x * sprime.y +
@@ -298,9 +346,14 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
 			    w.y * sprime.z, 
 
 			    u.z * sprime.x + 
-			    v.z* sprime.y +
+			    v.z * sprime.y +
 			    w.z * sprime.z);
        s->pos.equals(omega+omega_s_prime);	
+    }
+
+    if(s->pos.z-s->radius<0)
+    {
+
     }
     return collision_index;
 }
@@ -393,8 +446,8 @@ int main()
 				}
 				if(i==6){
 					s.radius = 1;
-					s.pos.x=5.2;
-					s.pos.y=5.3;
+					s.pos.x=6;
+					s.pos.y=6;
 					s.pos.z=Z_MAX-s.radius;
 				}
 				if(i==168){
@@ -417,6 +470,10 @@ int main()
 				if(check_intersect(s.radius, s.pos, i, 1, 1, 1 )!=-1){
 				    std::cout << "Something Bad Just Happened" << std::endl;
 				}
+				std::cout << "The contact array is currently: " << 
+				    contact[0] << ", " <<
+				    contact[1] << ", " <<
+				    contact[2] << std::endl;
 				switch(state)
 				{
 
