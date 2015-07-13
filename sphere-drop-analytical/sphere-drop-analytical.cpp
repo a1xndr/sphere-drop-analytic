@@ -239,6 +239,29 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
     double T=1;
     int collision_index=-1;
     int false_values=0;
+
+    /*-----------------------------------------------------------------------------
+     *  Yet another attempt to define the horizon
+     *-----------------------------------------------------------------------------*/
+    vec3 apex(omega.x, omega.y, omega.z+s->radius);
+    vec3 apex_pos = s->pos - apex;
+    int f = apex.z/apex_pos.z;
+    vec3 horizontal_dir = apex + apex_pos.scalar_multiply(f);
+    vec3 horizontal_pos = (final_dir.normalize()).scalar_multiply(s->radius);
+    vec3 horizonatal_pos_prime( 
+			u.x * horizontal_pos.x + 
+			u.y * horizontal_pos.y +
+			u.z * horizontal_pos.z, 
+			
+			v.x * horizontal_pos.x + 
+			v.y * horizontal_pos.y +
+			v.z * horizontal_pos.z, 
+
+			w.x * horizontal_pos.x + 
+			w.y * horizontal_pos.y +
+			w.z * horizontal_pos.z);
+    double beta_horizontal = acos(horizontal_pos_prime.z);
+       
     for(int l=0; l<intersects.size(); l++)
     {
 	//if(i==6) continue;
