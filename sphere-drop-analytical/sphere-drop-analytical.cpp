@@ -27,12 +27,12 @@
 
 
 //parameters
-const int NUM_SPHERES = 7;
+const int NUM_SPHERES = 24;
 const int X_MAX = 10;
 const int Y_MAX = 10;
 const int Z_MAX = 10;
-const double R_MIN = 0.2;
-const double R_MAX = 0.4;
+const double R_MIN = 0.5;
+const double R_MAX = 0.5;
 const double STEP = 0.001;
 
 
@@ -224,43 +224,42 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
     vec3 omega = c2c3_norm.scalar_multiply(dot_product(s->pos,c2c3_norm)); 
     omega = c2_omega + spheres[j].pos;
     vec3 omega_s = s->pos - omega;
+
+
     std::vector<int> intersects = check_intersects(omega_s.magnitude() + spheres[j].radius,
     		spheres[j].pos, i ,1,1,1);
 
     double beta_min = acos(w.x);
-    double beta = acos(dot_product(omega_s,v)/dot_product(omega,s->pos));
-    if(dot_product(omega_s,w)<0)
-    {
-	beta = beta*-1;
-    }
+    double beta = acos(dot_product(omega_s,v)/omega_s.magnitude());
+    if(dot_product(omega_s,w)<0) beta *= -1.;
     int sign_coef = 1;
     if(beta<0)sign_coef=-1;
     std::cout << "sign_coef is " << sign_coef << std::endl;
-    double T=1;
-    int collision_index=-1;
+    double T=0;
+    int collision_index =-1;
     int false_values=0;
 
     /*-----------------------------------------------------------------------------
      *  Yet another attempt to define the horizon
      *-----------------------------------------------------------------------------*/
-    vec3 apex(omega.x, omega.y, omega.z+s->radius);
-    vec3 apex_pos = s->pos - apex;
-    int f = apex.z/apex_pos.z;
-    vec3 horizontal_dir = apex + apex_pos.scalar_multiply(f);
-    vec3 horizontal_pos = (final_dir.normalize()).scalar_multiply(s->radius);
-    vec3 horizonatal_pos_prime( 
-			u.x * horizontal_pos.x + 
-			u.y * horizontal_pos.y +
-			u.z * horizontal_pos.z, 
-			
-			v.x * horizontal_pos.x + 
-			v.y * horizontal_pos.y +
-			v.z * horizontal_pos.z, 
-
-			w.x * horizontal_pos.x + 
-			w.y * horizontal_pos.y +
-			w.z * horizontal_pos.z);
-    double beta_horizontal = acos(horizontal_pos_prime.z);
+//    vec3 apex(omega.x, omega.y, omega.z+s->radius);
+//    vec3 apex_pos = s->pos - apex;
+//    int f = apex.z/apex_pos.z;
+//    vec3 horizontal_dir = apex + apex_pos.scalar_multiply(f);
+//    vec3 horizontal_pos = (final_dir.normalize()).scalar_multiply(s->radius);
+//    vec3 horizonatal_pos_prime( 
+//			u.x * horizontal_pos.x + 
+//			u.y * horizontal_pos.y +
+//			u.z * horizontal_pos.z, 
+//			
+//			v.x * horizontal_pos.x + 
+//			v.y * horizontal_pos.y +
+//			v.z * horizontal_pos.z, 
+//
+//			w.x * horizontal_pos.x + 
+//			w.y * horizontal_pos.y +
+//			w.z * horizontal_pos.z);
+//    double beta_horizontal = acos(horizontal_pos_prime.z);
        
     for(int l=0; l<intersects.size(); l++)
     {
@@ -275,8 +274,8 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
 	vec3 cprime(dot_product(omega_c, u),dot_product(omega_c, v),dot_product(omega_c, w));
 	
 	if(s->radius - pow(pow(pow( pow(cprime.y,2)+pow(cprime.z ,2) ,0.5) 
-			    - s->radius - spheres[j].radius,2) + pow(cprime.x,2),0.5) 
-			    + spheres[intersects[l]].radius <= 0){
+			    - s->radius - omega_s.magnitude(),2) + pow(cprime.x,2),0.5) 
+			    + spheres[intersects[l]].radius <= SMIDGE){
 	    false_values++;
 	    continue;
 		}
@@ -330,7 +329,11 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
 	if(K2*(K3-K1*T2)<0)T2=T1;
 	if(K2*(K3-K1*T2)<0)continue;
 	double sol;
-	if(abs(T1)<abs(T2)){
+	
+	/*-----------------------------------------------------------------------------
+	 *  Old method that should be working
+	 *-----------------------------------------------------------------------------*/
+	/*if(abs(T1)<abs(T2)){
 	    sol=T2;
 	}	    
 	else{
@@ -339,7 +342,16 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
 	if(abs(sol)<abs(T)){
 	    collision_index=intersects[l];
 	    T = sol;
-	}	
+	}*/	
+	/*-----------------------------------------------------------------------------
+	 *  Method described in paper
+	 *-----------------------------------------------------------------------------*/
+	sol = std::max(T1,T2);
+	if(sol>T){
+	    T=sol;
+	    collision_index=intersects[l];
+	}
+
     }
     if(T==1)
     {
@@ -358,7 +370,7 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
 	std::cout   << "We will use T=" << T <<
 			" corresponding to "<< acos(T) << std::endl;
     	double betaprime = sign_coef * acos(T);
-	if(i==6)betaprime=beta_min;
+	//if(i==6)betaprime= betaprime;
 	vec3 sprime(0, omega_s.magnitude() * cos(betaprime), omega_s.magnitude()*sin(betaprime));
 	vec3 omega_s_prime( u.x * sprime.x + 
 			    v.x * sprime.y +
@@ -473,9 +485,151 @@ int main()
 					s.pos.y=6;
 					s.pos.z=Z_MAX-s.radius;
 				}
-				if(i==168){
-					int j=2;
+				if(i==0){
+					s.radius = 1;
+					s.pos.x=1;
+					s.pos.y=1;
+					s.pos.z=Z_MAX-s.radius;
 				}
+				if(i==1){
+					s.radius = 1;
+					s.pos.x=1;
+					s.pos.y=3;
+					s.pos.z=Z_MAX-s.radius;
+				}
+				if(i==2){
+					s.radius = 1;
+					s.pos.x=1;
+					s.pos.y=5;
+					s.pos.z=Z_MAX-s.radius;
+				}
+				if(i==3){
+					s.radius = 1;
+					s.pos.x=1;
+					s.pos.y=7;
+					s.pos.z=Z_MAX-s.radius;
+				}
+				if(i==4){
+					s.radius = 1;
+					s.pos.x=3;
+					s.pos.y=1;
+					s.pos.z=Z_MAX-s.radius;
+				}
+				if(i==5){
+					s.radius = 1;
+					s.pos.x=3;
+					s.pos.y=3;
+					s.pos.z=Z_MAX-s.radius;
+				}
+				if(i==6){
+					s.radius = 1;
+					s.pos.x=3;
+					s.pos.y=5;
+					s.pos.z=Z_MAX-s.radius;
+				}
+				if(i==7){
+					s.radius = 1;
+					s.pos.x=3;
+					s.pos.y=7;
+					s.pos.z=Z_MAX-s.radius;
+				}
+				if(i==8){
+					s.radius = 1;
+					s.pos.x=5;
+					s.pos.y=1;
+					s.pos.z=Z_MAX-s.radius;
+				}
+				if(i==9){
+					s.radius = 1;
+					s.pos.x=5;
+					s.pos.y=3;
+					s.pos.z=Z_MAX-s.radius;
+				}
+				if(i==10){
+					s.radius = 1;
+					s.pos.x=5;
+					s.pos.y=5;
+					s.pos.z=Z_MAX-s.radius;
+				}
+				if(i==11){
+					s.radius = 1;
+					s.pos.x=5;
+					s.pos.y=7;
+					s.pos.z=Z_MAX-s.radius;
+				}
+				if(i==12){
+					s.radius = 0.51;
+					s.pos.x=3.1;
+					s.pos.y=3.1;
+					s.pos.z=Z_MAX-s.radius;
+				}
+				if(i==13){
+					s.radius = 0.51;
+					s.pos.x=2.9;
+					s.pos.y=3.1;
+					s.pos.z=Z_MAX-s.radius;
+				}
+				if(i==14){
+					s.radius = 0.51;
+					s.pos.x=2.9;
+					s.pos.y=2.9;
+					s.pos.z=Z_MAX-s.radius;
+				}
+				if(i==15){
+					s.radius = 0.51;
+					s.pos.x=3.1;
+					s.pos.y=2.9;
+					s.pos.z=Z_MAX-s.radius;
+				}
+				if(i==16){
+					s.radius = 0.51;
+					s.pos.x=3.1;
+					s.pos.y=3;
+					s.pos.z=Z_MAX-s.radius;
+				}
+				if(i==17){
+					s.radius = 0.51;
+					s.pos.x=3;
+					s.pos.y=3.1;
+					s.pos.z=Z_MAX-s.radius;
+				}
+				if(i==18){
+					s.radius = 0.51;
+					s.pos.x=2.9;
+					s.pos.y=3;
+					s.pos.z=Z_MAX-s.radius;
+				}
+				if(i==19){
+					s.radius = 0.51;
+					s.pos.x=3;
+					s.pos.y=2.9;
+					s.pos.z=Z_MAX-s.radius;
+				}
+				if(i==20){
+					s.radius = 0.51;
+					s.pos.x=3.1;
+					s.pos.y=3;
+					s.pos.z=Z_MAX-s.radius;
+				}
+				if(i==21){
+					s.radius = 0.51;
+					s.pos.x=3;
+					s.pos.y=3.1;
+					s.pos.z=Z_MAX-s.radius;
+				}
+				if(i==22){
+					s.radius = 0.51;
+					s.pos.x=2.9;
+					s.pos.y=3;
+					s.pos.z=Z_MAX-s.radius;
+				}
+				if(i==23){
+					s.radius = 0.51;
+					s.pos.x=3;
+					s.pos.y=2.9;
+					s.pos.z=Z_MAX-s.radius;
+				}
+				
 			    bool lodged = false;
 			    int state = 0;
 			    int contact[3]={-1,-1,-1};
