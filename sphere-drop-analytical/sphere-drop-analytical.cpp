@@ -27,7 +27,7 @@
 
 
 //parameters
-const int NUM_SPHERES = 24;
+const int NUM_SPHERES = 14;
 const int X_MAX = 10;
 const int Y_MAX = 10;
 const int Z_MAX = 10;
@@ -200,7 +200,7 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
     // All notation follows the paper j=s2, k=s3 etc
     
     //We define a new coordinate basis u, v, w
-    if(i==6){
+    if(i==13){
 	std::cout << "Culprit found" << std::endl;
     }
     //Vector between two spheres of contact
@@ -216,6 +216,9 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
 
     //Basis vector w: u x v
     vec3 w = cross_product(u,v);
+    std::cout << "u is " << u.x << ", "<< u.y << " " << u.z<< std::endl;
+    std::cout << "v is " << v.x << ", "<< v.y << " " << v.z<< std::endl;
+    std::cout << "w is " << w.x << ", "<< w.y << " " << w.z<< std::endl;
 
     vec3 c2_omega = c2c3.scalar_multiply(
 		dot_product(s->pos-spheres[j].pos,spheres[k].pos-spheres[j].pos)
@@ -235,10 +238,13 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
     int sign_coef = 1;
     if(beta<0)sign_coef=-1;
     std::cout << "sign_coef is " << sign_coef << std::endl;
-    double T=0;
+    std::cout << "beta is " << beta << std::endl;
+    double T=-1;
     int collision_index =-1;
     int false_values=0;
 
+    vec3 stform(dot_product(omega_s, u),dot_product(omega_s, v),dot_product(omega_s, w));
+    std::cout << "s in our new coordinates is " << stform.x << ", "<< stform.y << " " << stform.z<< std::endl;
     /*-----------------------------------------------------------------------------
      *  Yet another attempt to define the horizon
      *-----------------------------------------------------------------------------*/
@@ -558,25 +564,25 @@ int main()
 					s.pos.z=Z_MAX-s.radius;
 				}
 				if(i==12){
-					s.radius = 0.51;
+					s.radius = 1;
 					s.pos.x=3.1;
 					s.pos.y=3.1;
 					s.pos.z=Z_MAX-s.radius;
 				}
 				if(i==13){
-					s.radius = 0.51;
+					s.radius = 1;
 					s.pos.x=2.9;
 					s.pos.y=3.1;
 					s.pos.z=Z_MAX-s.radius;
 				}
 				if(i==14){
-					s.radius = 0.51;
+					s.radius = 1;
 					s.pos.x=2.9;
 					s.pos.y=2.9;
 					s.pos.z=Z_MAX-s.radius;
 				}
 				if(i==15){
-					s.radius = 0.51;
+					s.radius = 1;
 					s.pos.x=3.1;
 					s.pos.y=2.9;
 					s.pos.z=Z_MAX-s.radius;
