@@ -29,6 +29,7 @@ struct vec3 {
 	vec3();
 	double x, y, z;
 	double magnitude();
+	vec3 normalize();
 	void equals(vec3 vec);
 	vec3 scalar_multiply(double b);
 	vec3 operator+(vec3& b);

@@ -27,7 +27,7 @@
 
 
 //parameters
-const int NUM_SPHERES = 14;
+const int NUM_SPHERES = 100;
 const int X_MAX = 10;
 const int Y_MAX = 10;
 const int Z_MAX = 10;
@@ -208,12 +208,12 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
 
     // Basis vector u: Normalized vector c2c3
     vec3 u(c2c3.x/c2c3.magnitude(), c2c3.y/c2c3.magnitude(), c2c3.z/c2c3.magnitude());
-    
+    u.equals(u.normalize());
     // Basis vector v: k-(k.u)u
     vec3 v( 0-(u.z)*u.x,
 	    0-(u.z)*u.y,
 	    1-(u.z)*u.z);
-
+    v.equals(v.normalize());
     //Basis vector w: u x v
     vec3 w = cross_product(u,v);
     std::cout << "u is " << u.x << ", "<< u.y << " " << u.z<< std::endl;
@@ -491,7 +491,7 @@ int main()
 					s.pos.y=6;
 					s.pos.z=Z_MAX-s.radius;
 				}
-				if(i==0){
+				  if(i==0){
 					s.radius = 1;
 					s.pos.x=1;
 					s.pos.y=1;

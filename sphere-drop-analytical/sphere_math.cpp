@@ -159,6 +159,19 @@ double vec3::magnitude()
 	return distance(vec3(0,0,0),vec3(x,y,z));
 }
 
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  normalize
+ *  Description:  Normalizes a vector and returns the result as a new vector
+ * =====================================================================================
+ */
+vec3 vec3::normalize()
+{
+	vec3 norm(  this->x/this->magnitude(),
+		    this->y/this->magnitude(),
+		    this->z/this->magnitude());
+	return norm;
+}
 
 /*
  * ===  FUNCTION  ======================================================================
