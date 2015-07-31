@@ -1,9 +1,9 @@
 /*
  * =====================================================================================
  *
- *       Filename:  bubble-analysis.cpp
+ *       Filename:  pore-statistics.cpp
  *
- *    Description:  Split bubbles into different pore regions.
+ *    Description:  Count pores, their volume etc
  *
  *        Version:  1.0
  *        Created:  03/09/2015 04:02:39 PM
@@ -28,8 +28,7 @@
 #include "sphere.hpp"
 #include "bubble.hpp"
 
-const int NUM_SPHERES = 2000000;
-const int NUM_BUBBLES = 2000000;
+int MAX_PORES = 2000000;
 const int MAX_TRIES = 100000;
 const int X_MAX = 10;
 const int Y_MAX = 10;
@@ -39,33 +38,27 @@ const double R_STEP_SIZE = 0.001;
 
 
 
+struct pore {
+    int id=0;
+    vector<int> bubble_ids;
+    double volume=0;
+    double count=0;
+}
 
-struct bubble bubbles[NUM_BUBBLES];
-int bubble_map[NUM_BUBBLES]={-1};
+vector<pore> pores;
+int pores_map[MAX_PORES] = -1;
+
 
 /* 
  * ===  FUNCTION  ======================================================================
- *         Name:  check_intersect
- *  Description:  Checks a sphere of radius radius amd position pos against the array of
- *  spheres and bubbles for intersections
+ *         Name:  read_pores
+ *  Description:  Reads pores from a file of bubbles. Need to make this filename indep
  * =====================================================================================
  */
-int check_intersect(double radius, vec3 pos, int j, bool fastx, bool fasty, bool fastz){
-    for(int k=j-1; k >=0; k--)
-    {
-        if(fastx && abs(pos.x-bubbles[k].pos.x) > radius + bubbles[k].radius)continue;
-        if(fasty && abs(pos.y-bubbles[k].pos.y) > radius + bubbles[k].radius)continue;
-        if(fastz && abs(pos.z-bubbles[k].pos.z) > radius + bubbles[k].radius)continue;
-        //Square of distance between two centers comparison against square of radius.
-        if( distance(pos,bubbles[k].pos)
-            < bubbles[k].radius + radius - SMIDGE)return NUM_SPHERES+k;
-    }
-    return -1;
-}
-
-int read_bubble_coords(){
-    std::ifstream file("bubbles.list");
+int read_pores(){
+    std::ifstream file("bubbles_with_pores.list");
     int count = 0;
+    int num_pores=0; //The current number of registered pores;
     if(file.is_open())
     {
         std::string line;
@@ -73,27 +66,35 @@ int read_bubble_coords(){
         {
             std::istringstream iss(line);
             double d;
-            double params[4];
+            double params[5];
             int paramcount=0;;
-            while (iss>>d){
+            while (iss>>d)
+            {
                 params[paramcount]=d;
                 paramcount++;
             }
-            bubbles[count].radius=params[0];
-            bubbles[count].pos = (vec3){params[1],params[2],params[3]};
-            bubble_map[count]=count;
-            getline(file, line); 
-            //std::cout << line <<std::endl;
-            std::istringstream iss2(line);
-            int i;
-            while (iss2>>i){
-                bubbles[count].neighboors.push_back(i);
-                bubbles[i].neighboors.push_back(count);
-            } 
+            if(pores_map[params[4]]==-1)
+            {
+                pore p;
+                p.id= params[4];
+                p.bubble_ids.push_back(count);
+                p.volume += (4/3)*PI*pow(params[0],3);
+                p.count++;
+                pores.push_back(p);
+                pores_map[params[4]]=num_pores;
+                num_pores++;
+
+            }
+            else 
+            {
+                pores[pores_map[params[4]]].bubble_ids.push_back(count);
+                pores[pores_map[params[4]]].volume+= (4/3)*PI*pow(params[0],3);
+                pores[pores_map[params[4]]].count++;
+            }
             count++;
         }
     }
-    return count;
+    return num_pores;
 }
 
 void bubble_sort(bubble arr[], int size) {
