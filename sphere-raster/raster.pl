@@ -5,6 +5,7 @@ use GD::Simple;
 
 
 my $file = $ARGV[0] or die
+
 #create a new image (width, height)
 my $img = GD::Simple->new(200, 100);
 
@@ -25,6 +26,13 @@ while (my $line = <COORDS>)
 	$volume+=$words[0]**3 * (4/3)*3.14159265;
 	$count++;
 }
+
+if($ARGV[1])
+{
+    $file = $ARGV[1];
+
+}
+
 
 use Data::Dumper qw(Dumper);;   
 print Dumper \@spheres;

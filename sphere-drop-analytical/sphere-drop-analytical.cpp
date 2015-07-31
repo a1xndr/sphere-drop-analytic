@@ -27,12 +27,12 @@
 
 
 //parameters
-const int NUM_SPHERES = 100;
+const int NUM_SPHERES = 4;
 const int X_MAX = 10;
 const int Y_MAX = 10;
 const int Z_MAX = 10;
-const double R_MIN = 0.5;
-const double R_MAX = 0.5;
+const double R_MIN = 1;
+const double R_MAX = 1;
 const double STEP = 0.001;
 
 
@@ -449,7 +449,7 @@ int main()
 			    s.radius = radius;
 			    s.pos.equals(pos);
 
-				if(i==0){
+				/*if(i==0){
 					s.radius = 2;
 					s.pos.x=5;
 					s.pos.y=5;
@@ -634,7 +634,7 @@ int main()
 					s.pos.x=3;
 					s.pos.y=2.9;
 					s.pos.z=Z_MAX-s.radius;
-				}
+				}*/
 				
 			    bool lodged = false;
 			    int state = 0;
