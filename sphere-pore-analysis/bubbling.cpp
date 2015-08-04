@@ -21,6 +21,7 @@
 #include <math.h>
 #include <iostream>
 #include <fstream>
+#include <time.h>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -34,11 +35,12 @@ const int MAX_TRIES = 100000;
 const int X_MAX = 10;
 const int Y_MAX = 10;
 const int Z_MAX = 10;
-const double STEP_SIZE = 0.01;
-const double R_STEP_SIZE = 0.001;
+const double STEP_SIZE = 0.001;
+double R_STEP_SIZE = 0.001;
 
 
-
+double sphere_volume=0;
+double bubble_volume=0;
 
 struct sphere spheres[NUM_SPHERES];
 struct bubble bubbles[NUM_BUBBLES];
@@ -149,6 +151,7 @@ int check_intersect(double radius, vec3 pos, int i, int j, bool fastx, bool fast
 int read_sphere_coords(){
     std::ifstream file("spheres.list");
     int count = 0;
+    double pore_volume = X_MAX+Y_MAX+Z_MAX - sphere_volume;
     if(file.is_open())
     {
         std::string line;
@@ -163,6 +166,7 @@ int read_sphere_coords(){
                 paramcount++;
             }
             spheres[count]=(sphere){params[0], (vec3){params[1],params[2],params[3]}};
+            sphere_volume+=(4.0/3.0)*PI*pow(spheres[count].radius,3);
             count++;
         }
     }
@@ -173,6 +177,15 @@ int main()
 {
     int sphere_count    = read_sphere_coords(); 
     int bubble_count    = 0;
+    int percent_fill    = 0;
+    double pore_volume = X_MAX*Y_MAX*Z_MAX-sphere_volume;
+    std::cout<<sphere_volume<<std::endl;
+    std::cout<<pore_volume<<std::endl;
+    clock_t time_start = clock();
+    clock_t time = clock();
+    std::ofstream coordfile;
+    coordfile.open("bubbles.coord");
+    bool increment = true;
     while(1)
     {
         int tries=0;
@@ -354,13 +367,27 @@ int main()
                 }
             }
             bubbles[bubble_count]=b;
-            std::cout << b.radius << " " << b.pos.x << " " << b.pos.y << " " << b.pos.z << std::endl;
+            coordfile << b.radius << " " << b.pos.x << " " << b.pos.y << " " << b.pos.z << std::endl;
  //           std::cout << "Neighboors: ";
             for(int l=0; l<bubbles[bubble_count].neighboors.size(); l++)
             {
-                std::cout << bubbles[bubble_count].neighboors[l] <<" ";
+                coordfile << bubbles[bubble_count].neighboors[l] <<" ";
             }
-            std::cout << std::endl;
+            coordfile << std::endl;
+            bubble_volume += (4.0/3.0)*PI*pow(b.radius,3);
+            /*  if(((clock()-time)/CLOCKS_PER_SEC)>30 && increment){
+                R_STEP_SIZE=R_STEP_SIZE/10;  
+                std::cout << "Boom Decrement: " << R_STEP_SIZE << std::endl;
+                increment=false;
+            
+            }*/
+            if((int)((bubble_volume/pore_volume)*100)>percent_fill){
+                percent_fill = 100*bubble_volume/pore_volume;
+                time = clock();
+                increment=true;
+                int time_spent = (double)(time - time_start) / CLOCKS_PER_SEC;
+                std::cout << time_spent <<" elapsed. "<< percent_fill << "\% of pore space filled. \n";
+            }
             break;
         }
         bubble_count++;

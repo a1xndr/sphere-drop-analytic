@@ -84,8 +84,8 @@ while($layer<10 ){
     $img->bgcolor('black');
     for(my $j=0; $j<=$count; $j++ ){
 	if($spheres[$j]{z} + $spheres[$j]{r} >$layer && $spheres[$j]{z} - $spheres[$j]{r}<$layer){
-	    $img->fgcolor('black');
-	    $img->bgcolor('black');
+	    $img->fgcolor(30,30,30);
+	    $img->bgcolor(30,30,30);
 	    $img->moveTo(abs(1000*($spheres[$j]{x}))/$MAX,abs(1000*(10-$spheres[$j]{y}))/$MAX);
 	    #print 500*($spheres[$j]{x})/$MAX."\n";
             #print $j.'\n';
@@ -106,8 +106,9 @@ while($layer<10 ){
 	if($bubbles[$j]{z} + $bubbles[$j]{r} >$layer && $bubbles[$j]{z} - $bubbles[$j]{r}<$layer){
 	    $img->fgcolor('black');
             $p=$bubbles[$j]{p};
-            $img->fgcolor($p%255, 255-$p%190, 255-$p%255);
+            $img->fgcolor(255-$p%255, $p%255, $p%255);
             $img->bgcolor($p%255, 255-$p%190, 255-$p%255);
+            $img->bgcolor(255-$p%255, $p%255, $p%255);
             #$img->bgcolor('white');
             #$img->fgcolor('white');
 	    $img->moveTo(abs(1000*($bubbles[$j]{x}))/$MAX,abs(1000*(10-$bubbles[$j]{y}))/$MAX);
@@ -120,7 +121,7 @@ while($layer<10 ){
 	    $img->moveTo(abs(1000*($bubbles[$j]{x}))/$MAX,abs(1000*(10-$bubbles[$j]{y}))/$MAX);
 	    $img->fgcolor('white');
 	    $img->bgcolor('white');
-            #$img->string($bubbles[$j]{p});
+#            $img->string($bubbles[$j]{p});
             print "r:".$bubbles[$j]{r}." x:".$bubbles[$j]{x}." y:".$bubbles[$j]{y}." z:".$bubbles[$j]{z} ."";
 	    $num++;
 	}
@@ -128,11 +129,11 @@ while($layer<10 ){
     my $area_ratio=$area/100;
     $area_ratio = sprintf("%.2f", $area_ratio);
     $area = sprintf("%.2f", $area);
-    $img->bgcolor('white');
-    $img->fgcolor('white');
-    $img->rectangle(0,1000,1000,1050);
     $img->bgcolor('black');
     $img->fgcolor('black');
+    $img->rectangle(0,1000,1000,1100);
+    $img->bgcolor('black');
+    $img->fgcolor('white');
     $img->moveTo(10,1045);
     $img->fontsize(37);
     $img->font('Arial:bold');
@@ -145,7 +146,8 @@ while($layer<10 ){
     $img->moveTo(500,1095);
     $img->string('Area Fraction: '.$area_ratio);
     $img->fontsize(20);
-    open my $out, '>', 'img'.$i.'.png' or die;
+    $ifixed=sprintf("%05d", $i);
+    open my $out, '>', 'img'.$ifixed.'.png' or die;
     binmode $out;
     print $out $img->png;
     $i++;

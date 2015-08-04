@@ -28,7 +28,7 @@
 #include "sphere.hpp"
 #include "bubble.hpp"
 
-int MAX_PORES = 2000000;
+const int MAX_PORES = 2000000;
 const int MAX_TRIES = 100000;
 const int X_MAX = 10;
 const int Y_MAX = 10;
@@ -40,13 +40,13 @@ const double R_STEP_SIZE = 0.001;
 
 struct pore {
     int id=0;
-    vector<int> bubble_ids;
+    std::vector<int> bubble_ids;
     double volume=0;
     double count=0;
-}
+};
 
-vector<pore> pores;
-int pores_map[MAX_PORES] = -1;
+std::vector<pore> pores;
+int pores_map[MAX_PORES] = {-1};
 
 
 /* 
@@ -67,29 +67,33 @@ int read_pores(){
             std::istringstream iss(line);
             double d;
             double params[5];
-            int paramcount=0;;
+            int paramcount=0;
+            int poreid;
             while (iss>>d)
             {
                 params[paramcount]=d;
                 paramcount++;
+                poreid=params[4];
+                //std::cout << poreid <<"\n" ;
             }
-            if(pores_map[params[4]]==-1)
+            //std::cout << pores_map[poreid] <<"\n" ;
+            if(pores_map[poreid]==-1)
             {
                 pore p;
-                p.id= params[4];
+                p.id= poreid;
                 p.bubble_ids.push_back(count);
                 p.volume += (4/3)*PI*pow(params[0],3);
                 p.count++;
                 pores.push_back(p);
-                pores_map[params[4]]=num_pores;
+                pores_map[poreid]=num_pores;
                 num_pores++;
-
+                //std::cout << "incremented \n" ;
             }
             else 
             {
-                pores[pores_map[params[4]]].bubble_ids.push_back(count);
-                pores[pores_map[params[4]]].volume+= (4/3)*PI*pow(params[0],3);
-                pores[pores_map[params[4]]].count++;
+                pores[pores_map[poreid]].bubble_ids.push_back(count);
+                pores[pores_map[poreid]].volume+= (4/3)*PI*pow(params[0],3);
+                pores[pores_map[poreid]].count++;
             }
             count++;
         }
@@ -97,64 +101,23 @@ int read_pores(){
     return num_pores;
 }
 
-void bubble_sort(bubble arr[], int size) {
-    int count = 0;
-    while(1)
-    {
-        count++;
-        int switches=0;
-        for(int i=0; i<size; i++)
-        {
-            if(bubble_map[i+1]==-1)break;
-            if(arr[bubble_map[i]].radius < arr[bubble_map[i+1]].radius)
-            {
-                int tmp = bubble_map[i+1];
-                bubble_map[i+1] = bubble_map[i];
-                bubble_map[i] = tmp;
-                switches++;
-            }
-
-        }
- //       std::cout<<"Sort iteration: " << count << " Swiwtches: " << switches <<std::endl;
-        if(switches==0)break;
-    }
-}
 int main()
 {
-    int bubblecount    = read_bubble_coords();     
-    bubble_sort(bubbles,bubblecount);
- 
-    int maxid=0;
-    for(int i=0; i<bubblecount; i++)
-    {
-        double maxradius=bubbles[bubble_map[i]].radius;
-        int biggest=-1;
-        for(int j=0; j<bubbles[bubble_map[i]].neighboors.size(); j++)
-        {
-            int neighboor = bubbles[bubble_map[i]].neighboors[j];
-            //std::cout << neighboor << std::endl ;
-            if(bubbles[neighboor].radius>=maxradius && bubbles[neighboor].id>-1)
-            {
-                maxradius=bubbles[neighboor].radius;
-                biggest=neighboor;
-            }
-        }
-        if(biggest>-1)
-        {
-            bubbles[bubble_map[i]].id=bubbles[biggest].id;
-        }
-        else{
-            bubbles[bubble_map[i]].id=maxid;
-            maxid++;
-        }
+
+    for(int i=0; i<MAX_PORES; i++)
+    {   
+        pores_map[i]=-1;
     }
-    for(int i=0; i<bubblecount; i++)
+    int porecount    = read_pores();
+    for(int i=0; i<porecount; i++)
     {
-        std::cout << bubbles[bubble_map[i]].radius << " " ;
-        std::cout << bubbles[bubble_map[i]].pos.x << " " ;
-        std::cout << bubbles[bubble_map[i]].pos.y << " " ;
-        std::cout << bubbles[bubble_map[i]].pos.z << " " ;
-        std::cout << bubbles[bubble_map[i]].id << std::endl ;
+        if(pores[i].count>2)
+        {
+
+        std::cout << pores[i].id << " " ;
+        std::cout << pores[i].volume << " " ;
+        std::cout << pores[i].count << std::endl ;
+        }
     }
 }
 

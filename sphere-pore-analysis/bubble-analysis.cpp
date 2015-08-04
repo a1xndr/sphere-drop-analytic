@@ -38,11 +38,9 @@ const double STEP_SIZE = 0.01;
 const double R_STEP_SIZE = 0.001;
 
 
-
-
 struct bubble bubbles[NUM_BUBBLES];
 int bubble_map[NUM_BUBBLES]={-1};
-
+int bubble_radii[NUM_BUBBLES]={-1};
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  check_intersect
@@ -82,6 +80,7 @@ int read_bubble_coords(){
             bubbles[count].radius=params[0];
             bubbles[count].pos = (vec3){params[1],params[2],params[3]};
             bubble_map[count]=count;
+            bubble_radii[count]=params[0];
             getline(file, line); 
             //std::cout << line <<std::endl;
             std::istringstream iss2(line);
@@ -105,7 +104,7 @@ void bubble_sort(bubble arr[], int size) {
         for(int i=0; i<size; i++)
         {
             if(bubble_map[i+1]==-1)break;
-            if(arr[bubble_map[i]].radius < arr[bubble_map[i+1]].radius)
+            if(bubble_radii[bubble_map[i]] < bubble_radii[bubble_map[i+1]])
             {
                 int tmp = bubble_map[i+1];
                 bubble_map[i+1] = bubble_map[i];
@@ -114,7 +113,7 @@ void bubble_sort(bubble arr[], int size) {
             }
 
         }
- //       std::cout<<"Sort iteration: " << count << " Swiwtches: " << switches <<std::endl;
+       std::cout<<"Sort iteration: " << count << " Swiwtches: " << switches <<std::endl;
         if(switches==0)break;
     }
 }
