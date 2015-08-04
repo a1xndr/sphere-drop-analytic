@@ -40,7 +40,7 @@ const double R_STEP_SIZE = 0.001;
 
 struct bubble bubbles[NUM_BUBBLES];
 int bubble_map[NUM_BUBBLES]={-1};
-int bubble_radii[NUM_BUBBLES]={-1};
+double bubble_radii[NUM_BUBBLES]={-1};
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  check_intersect
@@ -114,13 +114,40 @@ void bubble_sort(bubble arr[], int size) {
 
         }
        std::cout<<"Sort iteration: " << count << " Swiwtches: " << switches <<std::endl;
-        if(switches==0)break;
+       if(switches==0)break;
     }
+}
+
+void quick_sort(bubble arr[],int left, int right)
+{
+//std::cout<<"Sorting with Left " << left << " and Right " << right <<std::endl;
+    int i = left;
+    int j = right;
+    int tmp;
+    double pivot = arr[bubble_map[(left+right)/2]].radius;
+    while(i <= j)
+    {
+        while(arr[bubble_map[i]].radius > pivot) i++;
+        while(arr[bubble_map[j]].radius < pivot) j--;
+        if(i <= j)
+        {
+            tmp = bubble_map[i];
+            bubble_map[i]=bubble_map[j];
+            bubble_map[j]=tmp;
+            i++;
+            j--;
+        }
+    }
+
+    if(left < j) quick_sort(arr, left, j);
+    if(i < right) quick_sort(arr, i, right);
+
+
 }
 int main()
 {
     int bubblecount    = read_bubble_coords();     
-    bubble_sort(bubbles,bubblecount);
+    quick_sort(bubbles,0,bubblecount);
  
     int maxid=0;
     for(int i=0; i<bubblecount; i++)
