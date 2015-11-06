@@ -24,8 +24,8 @@ use Image::Magick;
         "#C895C5", "#320033", "#FF6832", "#66E1D3", "#CFCDAC", "#D0AC94", "#7ED379", "#012C58"
 };
 
-my $WIDTH=2000;
-my $HEIGHT=2200;
+my $WIDTH=500;
+my $HEIGHT=500;
 
 my $file = $ARGV[0] or die
 
@@ -46,21 +46,23 @@ while (my $line = <COORDS>)
 {
 	chomp $line;
 	my @words = split / /, $line;
-	push(@spheres, { number=>$count, r => $words[0], x => $words[1], y => $words[2], z => $words[3] });
-	$volume+=$words[0]**3 * (4/3)*3.14159265;
+	push(@spheres, { number=>$words[0], r => $words[1], x => $words[2], y => $words[3], z => $words[4]});
+	$volume+=$words[1]**3 * (4/3)*3.14159265;
 	$count++;
 }
 
 my $bcount = 0;
-my $file2 = "pores";
+my $file2 = $ARGV[1];
 open(COORDS2, $file2);
+my $maxpore = 0;
 #binmode
 while (my $line = <COORDS2>) 
 {
 	chomp $line;
 	my @words = split / /, $line;
-	push(@bubbles, { number=>$count, r => $words[0], x => $words[1], y => $words[2], z => $words[3], p=> $words[4]});
-	$volume+=$words[0]**3 * (4/3)*3.14159265;
+	push(@bubbles, { number=>$words[0], r => $words[1], x => $words[2], y => $words[3], z => $words[4], p=> $words[5]});
+        if($words[4]>$maxpore){$maxpore = $words[4];}
+        $volume+=$words[0]**3 * (4/3)*3.14159265;
 	$bcount++;
 }
 
@@ -82,6 +84,7 @@ while($layer<10 ){
 
     $img = Image::Magick->new;
     $img->Set(size=>$WIDTH.'x'.$HEIGHT);
+    #$img->ReadImage('xc:none');
     $img->ReadImage('xc:black');
     #$img->font('Arial');
     #$img->fontsize(10);
@@ -103,7 +106,8 @@ while($layer<10 ){
             $radius = int($diameter/2);
             $x = int(abs($WIDTH*($spheres[$j]{x}))/$MAX);
             $y = int(abs($WIDTH*(10-$spheres[$j]{y}))/$MAX);
-            $img->Draw(fill=>'rgb(20,20,20)',stroke=>'none',primitive=>'circle', points=> $x.','.$y.' '.($x+$radius).','.$y,strokewidth=>0);
+            $img->Draw(fill=>'rgb(250,250,250)',stroke=>'none',primitive=>'circle', points=> $x.','.$y.' '.($x+$radius).','.$y,strokewidth=>0);
+            $img->Annotate(text => $spheres[$j]{number}, geometry => '+'.$x.'+'.$y,pen => 'rgb(250,0,0)', font => 'arial',pointsize => 9);
             #$img->ellipse($diameter,$diameter);
             #$img->moveTo(abs(1000*($spheres[$j]{x}))/$MAX,abs(1000*(10-$spheres[$j]{y}))/$MAX);
             #$img->fgcolor('red');
@@ -132,7 +136,7 @@ for(my $j=0; $j<=$bcount; $j++ ){
             $x = int(abs($WIDTH*($bubbles[$j]{x}))/$MAX);
             $y = int(abs($WIDTH*(10-$bubbles[$j]{y}))/$MAX);
             $r = 255-$p%255;
-            $g = $p%255;
+            $g = 128+$p%127;
             $b = $p%255;
             $img->Draw(fill=>'rgb('.$r.','.$g.','.$b.')',stroke=>'none',primitive=>'circle', points=> $x.','.$y.' '.($x+$radius).','.$y,strokewidth=>0);
 	    #$img->ellipse($diameter,$diameter);

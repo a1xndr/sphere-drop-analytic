@@ -22,10 +22,10 @@ while (my $line = <COORDS>)
 {
 	chomp $line;
 	my @words = split / /, $line;
-	if($words[3]+$words[0]>$maxz){
-	    $maxz = $words[3]+$words[0];
+	if($words[1]+$words[4]>$maxz){
+	    $maxz = $words[4]+$words[1];
 	}
-	$volume+=$words[0]**3 * (4/3)*3.14159265;
+	$volume+=$words[1]**3 * (4.0/3.0)*3.14159265;
 	$count++;
 }
 print "\n    count:   ".$count;

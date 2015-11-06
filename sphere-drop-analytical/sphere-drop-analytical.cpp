@@ -20,6 +20,8 @@
 #include <time.h>
 #include <math.h>
 #include <vector>
+#include <string>
+#include <fstream>
 #include <iostream>
 #include "sphere_math.hpp"
 #include "sphere.hpp"
@@ -27,13 +29,13 @@
 
 
 //parameters
-const int NUM_SPHERES = 4;
-const int X_MAX = 10;
-const int Y_MAX = 10;
-const int Z_MAX = 10;
-const double R_MIN = 1;
-const double R_MAX = 1;
-const double STEP = 0.001;
+const int NUM_SPHERES = 10000000;
+int X_MAX = 10;
+int Y_MAX = 10;
+int Z_MAX = 10;
+double R_MIN = 0.3;
+double R_MAX = 0.3;
+double STEP = 0.001;
 
 
 //Array of spheres to be filled
@@ -123,7 +125,7 @@ int single_sphere_roll(sphere *s,int j, int i){
 		std::cout << "Entering SSR" <<std::endl;
 	}	//Limit the amount of spheres we run the math against to the radius of the two
 	//touching spheres.
-    double r_collision_volume = 2*s->radius + spheres[j].radius;
+    double r_collision_volume = 2*s->radius + spheres[j].radius+SMIDGE;
     std::vector<int> intersects = check_intersects(r_collision_volume,
     		spheres[j].pos, i ,1,1,1);
     int collision = -1;
@@ -139,7 +141,8 @@ int single_sphere_roll(sphere *s,int j, int i){
     double newphi=0;
     double T = cos(0);
     for(int l=0; l<intersects.size(); l++){
-    	if(intersects[l]==j || intersects[l]==i)continue;
+        std::cout << "intersect: " << intersects[l] <<std::endl;
+        if(intersects[l]==j || intersects[l]==i)continue;
     	//Set up the variables exactly as detailed in the paper.
     	double Wx 	= (spheres[intersects[l]].pos.x-spheres[j].pos.x)/(s->radius+spheres[j].radius);
     	double Wy 	= (spheres[intersects[l]].pos.y-spheres[j].pos.y)/(s->radius+spheres[j].radius);
@@ -155,31 +158,22 @@ int single_sphere_roll(sphere *s,int j, int i){
     	if(D<0)continue;
     	double T1 = (2*K1*K3 + pow(D,0.5))/(2*(pow(K1,2)+pow(K2,2)));
     	double T2 = (2*K1*K3 - pow(D,0.5))/(2*(pow(K1,2)+pow(K2,2)));
-    	if(K2*(K3-K1*T1)<0)T1=T2;
+        //std::cout<<"T1 is " << T1 <<std::endl;
+        //std::cout<<"T2 is " << T2 <<std::endl;
+        if(K2*(K3-K1*T1)<0)T1=T2;
     	if(K2*(K3-K1*T2)<0)T2=T1;
     	if(K2*(K3-K1*T2)<0)continue;
 
 	double sol = std::min(T1, T2);
+        std::cout<<"sol is " << T2 <<std::endl;
     	double ang1 = acos(T1);
     	double ang2 = acos(T2);
     	double ang;
-
-	if(sol<maxsol && sol>0 && sol > cos(phi)){
+	if(sol<maxsol && sol>0){
 	    maxsol = sol;
+            std::cout<<"maxsol is " << maxsol <<std::endl;
 	    collision = intersects[l];
 	}
-//    	if(spheres[intersects[l]].pos.z<spheres[j].pos.z){
-//    		ang=std::min(ang1, ang2);
-//    	}
-//    	else{
-//    		ang=std::max(ang1, ang2);
-//    	}
-//    	if(ang>newphi && ang<phi)
-//    	{
-//    		collision = intersects[l];
-//        	newphi=ang;
-//    	}
-//    	newphi = ang;
     }
     newphi = acos(maxsol); 
     std::cout <<"phi is:" <<newphi <<std::endl;
@@ -245,28 +239,6 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
 
     vec3 stform(dot_product(omega_s, u),dot_product(omega_s, v),dot_product(omega_s, w));
     std::cout << "s in our new coordinates is " << stform.x << ", "<< stform.y << " " << stform.z<< std::endl;
-    /*-----------------------------------------------------------------------------
-     *  Yet another attempt to define the horizon
-     *-----------------------------------------------------------------------------*/
-//    vec3 apex(omega.x, omega.y, omega.z+s->radius);
-//    vec3 apex_pos = s->pos - apex;
-//    int f = apex.z/apex_pos.z;
-//    vec3 horizontal_dir = apex + apex_pos.scalar_multiply(f);
-//    vec3 horizontal_pos = (final_dir.normalize()).scalar_multiply(s->radius);
-//    vec3 horizonatal_pos_prime( 
-//			u.x * horizontal_pos.x + 
-//			u.y * horizontal_pos.y +
-//			u.z * horizontal_pos.z, 
-//			
-//			v.x * horizontal_pos.x + 
-//			v.y * horizontal_pos.y +
-//			v.z * horizontal_pos.z, 
-//
-//			w.x * horizontal_pos.x + 
-//			w.y * horizontal_pos.y +
-//			w.z * horizontal_pos.z);
-//    double beta_horizontal = acos(horizontal_pos_prime.z);
-       
     for(int l=0; l<intersects.size(); l++)
     {
 	//if(i==6) continue;
@@ -335,20 +307,6 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
 	if(K2*(K3-K1*T2)<0)T2=T1;
 	if(K2*(K3-K1*T2)<0)continue;
 	double sol;
-	
-	/*-----------------------------------------------------------------------------
-	 *  Old method that should be working
-	 *-----------------------------------------------------------------------------*/
-	/*if(abs(T1)<abs(T2)){
-	    sol=T2;
-	}	    
-	else{
-	    sol=T1;
-	}	    
-	if(abs(sol)<abs(T)){
-	    collision_index=intersects[l];
-	    T = sol;
-	}*/	
 	/*-----------------------------------------------------------------------------
 	 *  Method described in paper
 	 *-----------------------------------------------------------------------------*/
@@ -399,20 +357,129 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
     return collision_index;
 }
 
-int main()
+int main(int argc, char* argv[])
 {
-	//define random seed
+
+        std::string fn = "coords";
+        for(int i=0; i< argc; i++)
+        {
+            std::string arg = argv[i];
+            //Help
+            if(argc==1)
+            {
+                break;
+            }
+            else if(arg=="-h")
+            {
+                std::cout<< "Usage: " << argv[0] << " NUM_SPHERES" << " X_MAX" << " Y_MAX" << " Z_MAX" << " R_MIN" << " R_MAX" << " STEP" << " COORDS_FILE" <<  std::endl;
+                std::cout<< "No args implies hard-coded defaults." << std::endl;
+                return 0;
+            }
+            else if(argc==10) {
+                switch(i)
+                {
+                    case 2:
+                        //NUM_SPHERES = std::stoi(arg);
+                        break;
+                    case 3:
+                        X_MAX = std::stoi(arg);
+                        break;
+                    case 4:
+                        Y_MAX = std::stoi(arg);
+                        break;
+                    case 5:
+                        Z_MAX = std::stoi(arg);
+                        break;
+                    case 6:
+                        R_MAX = std::stod(arg);
+                        break;
+                    case 7:
+                        R_MIN = std::stod(arg);
+                        break;
+                    case 8:
+                        STEP = std::stod(arg);
+                        break;
+                    case 9:
+                        fn = arg;
+                        break;
+                    default:
+                        break;
+                }
+            }
+            else if(argc!=2){
+                std::cout << "Invalid number of arguments. " << std::endl;
+                return 0;
+            }
+        }
+        std::ofstream out(fn);
+
+       int sphere_count=0;
+        /*  for(double i=R_MIN/4; i<X_MAX; i+=(R_MIN)/2)
+        {
+            for(double j=R_MIN/4; j<Y_MAX; j+=(R_MIN)/2)
+            {
+                spheres[sphere_count].radius = R_MIN/4;
+                spheres[sphere_count].pos.x = i;
+                spheres[sphere_count].pos.y = j;
+                spheres[sphere_count].pos.z = R_MIN/4;
+                out << sphere_count << " " 
+                            << spheres[sphere_count].radius << " "
+			    << spheres[sphere_count].pos.x
+			    <<  " " <<spheres[sphere_count].pos.y
+			    <<  " " <<spheres[sphere_count].pos.z << std::endl << std::endl;
+                sphere_count++;
+                spheres[sphere_count].radius = R_MIN/4;
+                spheres[sphere_count].pos.z = i;
+                spheres[sphere_count].pos.y = j;
+                spheres[sphere_count].pos.x = R_MIN/4;
+                out << sphere_count << " " 
+                            << spheres[sphere_count].radius << " "
+			    << spheres[sphere_count].pos.x
+			    <<  " " <<spheres[sphere_count].pos.y
+			    <<  " " <<spheres[sphere_count].pos.z << std::endl << std::endl;
+                sphere_count++;
+                spheres[sphere_count].radius = R_MIN/4;
+                spheres[sphere_count].pos.x = i;
+                spheres[sphere_count].pos.z = j;
+                spheres[sphere_count].pos.y = R_MIN/4;
+                out << sphere_count << " " 
+                            << spheres[sphere_count].radius << " "
+			    << spheres[sphere_count].pos.x
+			    <<  " " <<spheres[sphere_count].pos.y
+			    <<  " " <<spheres[sphere_count].pos.z << std::endl << std::endl;
+                sphere_count++;
+                spheres[sphere_count].radius = R_MIN/4;
+                spheres[sphere_count].pos.z = i;
+                spheres[sphere_count].pos.y = j;
+                spheres[sphere_count].pos.x = X_MAX-R_MIN/4;
+                out << sphere_count << " " 
+                            << spheres[sphere_count].radius << " "
+			    << spheres[sphere_count].pos.x
+			    <<  " " <<spheres[sphere_count].pos.y
+			    <<  " " <<spheres[sphere_count].pos.z << std::endl << std::endl;
+                sphere_count++;
+                spheres[sphere_count].radius = R_MIN/4;
+                spheres[sphere_count].pos.x = i;
+                spheres[sphere_count].pos.z = j;
+                spheres[sphere_count].pos.y = Y_MAX-R_MIN/4;
+                out << sphere_count << " " 
+                            << spheres[sphere_count].radius << " "
+			    << spheres[sphere_count].pos.x
+			    <<  " " <<spheres[sphere_count].pos.y
+			    <<  " " <<spheres[sphere_count].pos.z << std::endl << std::endl;
+                sphere_count++;
+            }
+        }*/
 	int time2 = time(NULL);
-	srand(12345);
-	//double ceil = Z_MAX/100.0;
+	srand(12345); //define random seed
 
 	std::default_random_engine generator;
 	std::exponential_distribution<double> distribution(35);
-	//total volume occupied by spheres
-	double volume=0;
+
+	double volume=0; //total volume occupied by spheres
 	
 	//Loop to attempt placement of NUM_SPHERES spheres
-	for(int i=0; i < NUM_SPHERES; i++)
+	for(int i=sphere_count; i < NUM_SPHERES; i++)
 	{
 		if(i==15000){
 
@@ -423,7 +490,7 @@ int main()
 		//sphere without immediate intersection(into a valid location) at the top
 		//of a container. If this fails many times, give up.
 		int tries = 0;
-		while(!placed && tries<100000)
+		while(!placed && tries<15)
 		{
 			tries++;
 			bool posfail = false;
@@ -434,9 +501,10 @@ int main()
 			vec3 pos;
 			pos.x = rand_range(radius, X_MAX - radius);
 			pos.y = rand_range(radius, Y_MAX - radius);
+			pos.z = rand_range(radius, Z_MAX - radius);
 			//pos.x = 5;
 			//pos.y = 5;
-			pos.z = Z_MAX - radius;
+			//pos.z = Z_MAX - radius;
 			if(pos.z-radius<0)posfail=true;
 			//make sure there is no immediate intersection
 			if(check_intersect(radius,pos,i,1,1,1)!=-1)
@@ -447,195 +515,7 @@ int main()
 			{
 			    sphere s;
 			    s.radius = radius;
-			    s.pos.equals(pos);
-
-				/*if(i==0){
-					s.radius = 2;
-					s.pos.x=5;
-					s.pos.y=5;
-					s.pos.z=Z_MAX-s.radius;
-				}
-				if(i==1){
-					s.radius = 2;
-					s.pos.x=6;
-					s.pos.y=6;
-					s.pos.z=Z_MAX-s.radius;
-				}
-				if(i==2){
-					s.radius = 1;
-					s.pos.x=4;
-					s.pos.y=4;
-					s.pos.z=Z_MAX-s.radius;
-				}
-				if(i==3){
-					s.radius = 1;
-					s.pos.x=7;
-					s.pos.y=8;
-					s.pos.z=Z_MAX-s.radius;
-				}
-				if(i==4){
-					s.radius = 1;
-					s.pos.x=5.2;
-					s.pos.y=5.3;
-					s.pos.z=Z_MAX-s.radius;
-				}
-				if(i==5){
-					s.radius = 1;
-					s.pos.x=5.2;
-					s.pos.y=5.3;
-					s.pos.z=Z_MAX-s.radius;
-				}
-				if(i==6){
-					s.radius = 1;
-					s.pos.x=6;
-					s.pos.y=6;
-					s.pos.z=Z_MAX-s.radius;
-				}
-				  if(i==0){
-					s.radius = 1;
-					s.pos.x=1;
-					s.pos.y=1;
-					s.pos.z=Z_MAX-s.radius;
-				}
-				if(i==1){
-					s.radius = 1;
-					s.pos.x=1;
-					s.pos.y=3;
-					s.pos.z=Z_MAX-s.radius;
-				}
-				if(i==2){
-					s.radius = 1;
-					s.pos.x=1;
-					s.pos.y=5;
-					s.pos.z=Z_MAX-s.radius;
-				}
-				if(i==3){
-					s.radius = 1;
-					s.pos.x=1;
-					s.pos.y=7;
-					s.pos.z=Z_MAX-s.radius;
-				}
-				if(i==4){
-					s.radius = 1;
-					s.pos.x=3;
-					s.pos.y=1;
-					s.pos.z=Z_MAX-s.radius;
-				}
-				if(i==5){
-					s.radius = 1;
-					s.pos.x=3;
-					s.pos.y=3;
-					s.pos.z=Z_MAX-s.radius;
-				}
-				if(i==6){
-					s.radius = 1;
-					s.pos.x=3;
-					s.pos.y=5;
-					s.pos.z=Z_MAX-s.radius;
-				}
-				if(i==7){
-					s.radius = 1;
-					s.pos.x=3;
-					s.pos.y=7;
-					s.pos.z=Z_MAX-s.radius;
-				}
-				if(i==8){
-					s.radius = 1;
-					s.pos.x=5;
-					s.pos.y=1;
-					s.pos.z=Z_MAX-s.radius;
-				}
-				if(i==9){
-					s.radius = 1;
-					s.pos.x=5;
-					s.pos.y=3;
-					s.pos.z=Z_MAX-s.radius;
-				}
-				if(i==10){
-					s.radius = 1;
-					s.pos.x=5;
-					s.pos.y=5;
-					s.pos.z=Z_MAX-s.radius;
-				}
-				if(i==11){
-					s.radius = 1;
-					s.pos.x=5;
-					s.pos.y=7;
-					s.pos.z=Z_MAX-s.radius;
-				}
-				if(i==12){
-					s.radius = 1;
-					s.pos.x=3.1;
-					s.pos.y=3.1;
-					s.pos.z=Z_MAX-s.radius;
-				}
-				if(i==13){
-					s.radius = 1;
-					s.pos.x=2.9;
-					s.pos.y=3.1;
-					s.pos.z=Z_MAX-s.radius;
-				}
-				if(i==14){
-					s.radius = 1;
-					s.pos.x=2.9;
-					s.pos.y=2.9;
-					s.pos.z=Z_MAX-s.radius;
-				}
-				if(i==15){
-					s.radius = 1;
-					s.pos.x=3.1;
-					s.pos.y=2.9;
-					s.pos.z=Z_MAX-s.radius;
-				}
-				if(i==16){
-					s.radius = 0.51;
-					s.pos.x=3.1;
-					s.pos.y=3;
-					s.pos.z=Z_MAX-s.radius;
-				}
-				if(i==17){
-					s.radius = 0.51;
-					s.pos.x=3;
-					s.pos.y=3.1;
-					s.pos.z=Z_MAX-s.radius;
-				}
-				if(i==18){
-					s.radius = 0.51;
-					s.pos.x=2.9;
-					s.pos.y=3;
-					s.pos.z=Z_MAX-s.radius;
-				}
-				if(i==19){
-					s.radius = 0.51;
-					s.pos.x=3;
-					s.pos.y=2.9;
-					s.pos.z=Z_MAX-s.radius;
-				}
-				if(i==20){
-					s.radius = 0.51;
-					s.pos.x=3.1;
-					s.pos.y=3;
-					s.pos.z=Z_MAX-s.radius;
-				}
-				if(i==21){
-					s.radius = 0.51;
-					s.pos.x=3;
-					s.pos.y=3.1;
-					s.pos.z=Z_MAX-s.radius;
-				}
-				if(i==22){
-					s.radius = 0.51;
-					s.pos.x=2.9;
-					s.pos.y=3;
-					s.pos.z=Z_MAX-s.radius;
-				}
-				if(i==23){
-					s.radius = 0.51;
-					s.pos.x=3;
-					s.pos.y=2.9;
-					s.pos.z=Z_MAX-s.radius;
-				}*/
-				
+			    s.pos.equals(pos);	
 			    bool lodged = false;
 			    int state = 0;
 			    int contact[3]={-1,-1,-1};
@@ -650,7 +530,7 @@ int main()
 						<< s.pos.z<< std::endl;
 			    while(!lodged)
 			    {
-				if(check_intersect(s.radius, s.pos, i, 1, 1, 1 )!=-1){
+				if(check_intersect(s.radius-SMIDGE, s.pos, i, 1, 1, 1 )!=-1){
 				    std::cout << "Something Bad Just Happened" << std::endl;
 				}
 				std::cout << "The contact array is currently: " << 
@@ -703,11 +583,13 @@ int main()
 					    contact[1]=collision;
 					}
 					else{
-						state = 0;
+					    state = 0;
 					    contact[0]=-1;
 					}
 					break;
 				    case 2:
+                                        state=3;
+                                        break;
 					collision=double_sphere_roll(&s, contact[0],contact[1], i);
 					std::cout   << "DSR:"
 				    		<< s.pos.x << " "
@@ -752,6 +634,7 @@ int main()
 				break;
 				}
 				else{
+		                        if(check_intersect(s.radius-0.1, s.pos, i, 1, 1, 1 )!=-1) continue;
 					placed = true;
 					spheres[i].radius = s.radius;
 					spheres[i].pos.x = s.pos.x;
@@ -765,26 +648,20 @@ int main()
 			//std::cout << "ERR::PLACEMENT // Placing sphere" << i << " failed" << std::endl;
 		}
 		else{
-		volume += (4.0/3.0) * PI * pow(spheres[i].radius, 3.0);
-		//if(volume/(ceil*X_MAX*Y_MAX)>=0.6)ceil+=Z_MAX/100.0;
-		/*std::cout   << "INF::VOLUME // Occupied Volume Ratio is "
-	    << volume/(X_MAX*Y_MAX*Z_MAX) << std::endl;//*/
-		/*std::cout << "INF::PLACEMENT // Placed sphere " << i
-		    << " of radius " << spheres[i].radius << " at coordinate ( "
-		    << spheres[i].pos.x << " , " << spheres[i].pos.y << " , "
-		    << spheres[i].pos.z << " )" << std::endl;*/
+                
+                volume += (4.0/3.0) * PI * pow(spheres[i].radius, 3.0);
 		std::cout   <<  spheres[i].radius << " "
 			    << spheres[i].pos.x
 			    <<  " " <<spheres[i].pos.y
-			    <<  " " <<spheres[i].pos.z << std::endl << std::endl;/*
-		std::cout   << "INF::VOLUME // Total Container Volume is "
-			    << X_MAX*Y_MAX*Z_MAX << std::endl;
-		std::cout   << "INF::VOLUME // Total Sphere Volume is "
-	    << volume << std::endl;
-		std::cout   << "INF::VOLUME // Occupied Volume Ratio is "
-	    << volume/(X_MAX*Y_MAX*Z_MAX) << std::endl;//*/
+			    <<  " " <<spheres[i].pos.z << std::endl << std::endl;
+                out << i << " " 
+                            << spheres[i].radius << " "
+			    << spheres[i].pos.x
+			    <<  " " <<spheres[i].pos.y
+			    <<  " " <<spheres[i].pos.z << std::endl << std::endl;
 		}
 	}
+        out.close();
 	std::cout << "===================" << std::endl;
 	for(int i=0; i<NUM_SPHERES; i++){
 		std::cout   <<  spheres[i].radius << " "

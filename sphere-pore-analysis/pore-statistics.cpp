@@ -47,8 +47,8 @@ struct pore {
 
 std::vector<pore> pores;
 int pores_map[MAX_PORES] = {-1};
-
-
+double max_volume = 0;
+double total_volume = 0;
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  read_pores
@@ -83,6 +83,8 @@ int read_pores(){
                 p.id= poreid;
                 p.bubble_ids.push_back(count);
                 p.volume += (4/3)*PI*pow(params[0],3);
+                total_volume+=(4/3)*PI*pow(params[0],3);
+                if(p.volume>max_volume)max_volume=p.volume;
                 p.count++;
                 pores.push_back(p);
                 pores_map[poreid]=num_pores;
@@ -93,6 +95,8 @@ int read_pores(){
             {
                 pores[pores_map[poreid]].bubble_ids.push_back(count);
                 pores[pores_map[poreid]].volume+= (4/3)*PI*pow(params[0],3);
+                total_volume+=(4/3)*PI*pow(params[0],3);
+                if(pores[pores_map[poreid]].volume>max_volume)max_volume=pores[pores_map[poreid]].volume;
                 pores[pores_map[poreid]].count++;
             }
             count++;
@@ -109,15 +113,22 @@ int main()
         pores_map[i]=-1;
     }
     int porecount    = read_pores();
+    double volint=max_volume/50;
+    double volume_frac[50];
     for(int i=0; i<porecount; i++)
     {
         if(pores[i].count>2)
         {
-
-        std::cout << pores[i].id << " " ;
-        std::cout << pores[i].volume << " " ;
-        std::cout << pores[i].count << std::endl ;
+        //std::cout << pores[i].id << " " ;
+        //std::cout << pores[i].volume << " " ;
+        //std::cout << pores[i].count << std::endl ;
+        std::cout << (int)(pores[i].volume*50/max_volume) << std::endl ;
+        volume_frac[(int)(pores[i].volume*50/max_volume)]+=pores[i].volume/total_volume;
         }
+    }
+    for(int i=0; i<50; i++)
+    {
+        std::cout << i*volint << " " << volume_frac[i] << std::endl;
     }
 }
 
