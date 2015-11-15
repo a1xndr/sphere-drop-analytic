@@ -33,8 +33,8 @@ const int NUM_SPHERES = 10000000;
 int X_MAX = 10;
 int Y_MAX = 10;
 int Z_MAX = 10;
-double R_MIN = 0.3;
-double R_MAX = 0.3;
+double R_MIN = 0.5;
+double R_MAX = 0.5;
 double STEP = 0.001;
 
 
@@ -125,23 +125,49 @@ int single_sphere_roll(sphere *s,int j, int i){
 		std::cout << "Entering SSR" <<std::endl;
 	}	//Limit the amount of spheres we run the math against to the radius of the two
 	//touching spheres.
-    double r_collision_volume = 2*s->radius + spheres[j].radius+SMIDGE;
-    std::vector<int> intersects = check_intersects(r_collision_volume,
-    		spheres[j].pos, i ,1,1,1);
-    int collision = -1;
     //Assemble the spherical coordinates that we will need to run the toroidal collision math
-    double r_traj 	= s->radius + spheres[j].radius;
+    double r_traj 	=(s->pos-spheres[j].pos).magnitude();
+    double d = sqrt(pow((s->pos.x-spheres[j].pos.x),2) + pow((s->pos.y-spheres[j].pos.y),2));
+    double cosphi     = d/(r_traj);
+    double sinphi     = (s->pos.z-spheres[j].pos.z)/(r_traj);
+    double costheta   = (s->pos.x-spheres[j].pos.x)/d;
+    double sintheta   = (s->pos.y-spheres[j].pos.y)/d;
+
+    std::cout << cosphi << std::endl;
+    std::cout << sinphi << std::endl;
+    std::cout << costheta << std::endl;
+    std::cout << sinphi << std::endl;
+    
     double phi 		= asin((s->pos.z-spheres[j].pos.z)/r_traj);
     double theta 	= atan2((s->pos.y-spheres[j].pos.y),(s->pos.x-spheres[j].pos.x));
-    vec3 u( cos(theta),	sin(theta), 0);
-    vec3 v(-sin(theta), cos(theta), 0);
+    vec3 u( costheta,	sintheta, 0);
+    vec3 v(-sintheta, costheta, 0);
     vec3 w(0,0,1);
+    
+    double r_collision_volume = (s->pos-spheres[j].pos).magnitude()+spheres[j].radius;
+    int collision = -1;
+    
+    std::vector<int> intersects = check_intersects(r_collision_volume,
+    		spheres[j].pos, i ,1,1,1);
 
     double maxsol = 1;
     double newphi=0;
     double T = cos(0);
     for(int l=0; l<intersects.size(); l++){
         std::cout << "intersect: " << intersects[l] <<std::endl;
+        vec3 sj = s->pos - spheres[j].pos;
+        vec3 sjprime( u.x * sj.x + 
+			    v.x * sj.y +
+			    w.x * sj.z, 
+			    
+			    u.y * sj.x + 
+			    v.y * sj.y +
+			    w.y * sj.z, 
+
+			    u.z * sj.x + 
+			    v.z * sj.y +
+			    w.z * sj.z);
+        if(s->radius+s->radius-sqrt(pow(sqrt(pow(sjprime.x,2)+pow(sjprime.z,2))-s->radius-r_traj,2)+pow(sjprime.y,2))<=0)continue;
         if(intersects[l]==j || intersects[l]==i)continue;
     	//Set up the variables exactly as detailed in the paper.
     	double Wx 	= (spheres[intersects[l]].pos.x-spheres[j].pos.x)/(s->radius+spheres[j].radius);
@@ -178,9 +204,24 @@ int single_sphere_roll(sphere *s,int j, int i){
     newphi = acos(maxsol); 
     std::cout <<"phi is:" <<newphi <<std::endl;
     std::cout << "hit against: " << collision <<std::endl;
-    s->pos.x = spheres[j].pos.x + r_traj*cos(theta)*cos(newphi);
-    s->pos.y = spheres[j].pos.y + r_traj*sin(theta)*cos(newphi);
-    s->pos.z = spheres[j].pos.z + r_traj*sin(newphi);
+    bool face_intersect=true;
+    while(face_intersect)
+    {
+        vec3 newpos(spheres[j].pos.x + r_traj*cos(theta)*cos(newphi),
+                    spheres[j].pos.y + r_traj*sin(theta)*cos(newphi),
+                    spheres[j].pos.z + r_traj*sin(newphi));
+        std::cout << newpos.x << " " <<newpos.y <<" " <<newpos.z << std::endl;
+        if(newpos.z-s->radius<0)
+        {
+            newphi = acos((spheres[j].pos.z-s->radius)/(r_traj*cosphi));
+        }
+        else {
+            face_intersect = false;
+        }
+    }
+        s->pos.x = spheres[j].pos.x + r_traj*cos(theta)*cos(newphi);
+        s->pos.y = spheres[j].pos.y + r_traj*sin(theta)*cos(newphi);
+        s->pos.z = spheres[j].pos.z + r_traj*sin(newphi);
     return collision;
 }
  /* ===  FUNCTION  ======================================================================
@@ -371,11 +412,13 @@ int main(int argc, char* argv[])
             }
             else if(arg=="-h")
             {
-                std::cout<< "Usage: " << argv[0] << " NUM_SPHERES" << " X_MAX" << " Y_MAX" << " Z_MAX" << " R_MIN" << " R_MAX" << " STEP" << " COORDS_FILE" <<  std::endl;
+                std::cout<< "Usage: " << argv[0] 
+                    << " NUM_SPHERES" << " X_MAX" << " Y_MAX" << " Z_MAX" 
+                    << " R_MIN" << " R_MAX" << " STEP" << " COORDS_FILE" <<  std::endl;
                 std::cout<< "No args implies hard-coded defaults." << std::endl;
                 return 0;
             }
-            else if(argc==10) {
+            else if(argc==9) {
                 switch(i)
                 {
                     case 2:
@@ -406,71 +449,15 @@ int main(int argc, char* argv[])
                         break;
                 }
             }
-            else if(argc!=2){
+            else if(argc!=9){
                 std::cout << "Invalid number of arguments. " << std::endl;
                 return 0;
             }
         }
         std::ofstream out(fn);
 
-       int sphere_count=0;
-        /*  for(double i=R_MIN/4; i<X_MAX; i+=(R_MIN)/2)
-        {
-            for(double j=R_MIN/4; j<Y_MAX; j+=(R_MIN)/2)
-            {
-                spheres[sphere_count].radius = R_MIN/4;
-                spheres[sphere_count].pos.x = i;
-                spheres[sphere_count].pos.y = j;
-                spheres[sphere_count].pos.z = R_MIN/4;
-                out << sphere_count << " " 
-                            << spheres[sphere_count].radius << " "
-			    << spheres[sphere_count].pos.x
-			    <<  " " <<spheres[sphere_count].pos.y
-			    <<  " " <<spheres[sphere_count].pos.z << std::endl << std::endl;
-                sphere_count++;
-                spheres[sphere_count].radius = R_MIN/4;
-                spheres[sphere_count].pos.z = i;
-                spheres[sphere_count].pos.y = j;
-                spheres[sphere_count].pos.x = R_MIN/4;
-                out << sphere_count << " " 
-                            << spheres[sphere_count].radius << " "
-			    << spheres[sphere_count].pos.x
-			    <<  " " <<spheres[sphere_count].pos.y
-			    <<  " " <<spheres[sphere_count].pos.z << std::endl << std::endl;
-                sphere_count++;
-                spheres[sphere_count].radius = R_MIN/4;
-                spheres[sphere_count].pos.x = i;
-                spheres[sphere_count].pos.z = j;
-                spheres[sphere_count].pos.y = R_MIN/4;
-                out << sphere_count << " " 
-                            << spheres[sphere_count].radius << " "
-			    << spheres[sphere_count].pos.x
-			    <<  " " <<spheres[sphere_count].pos.y
-			    <<  " " <<spheres[sphere_count].pos.z << std::endl << std::endl;
-                sphere_count++;
-                spheres[sphere_count].radius = R_MIN/4;
-                spheres[sphere_count].pos.z = i;
-                spheres[sphere_count].pos.y = j;
-                spheres[sphere_count].pos.x = X_MAX-R_MIN/4;
-                out << sphere_count << " " 
-                            << spheres[sphere_count].radius << " "
-			    << spheres[sphere_count].pos.x
-			    <<  " " <<spheres[sphere_count].pos.y
-			    <<  " " <<spheres[sphere_count].pos.z << std::endl << std::endl;
-                sphere_count++;
-                spheres[sphere_count].radius = R_MIN/4;
-                spheres[sphere_count].pos.x = i;
-                spheres[sphere_count].pos.z = j;
-                spheres[sphere_count].pos.y = Y_MAX-R_MIN/4;
-                out << sphere_count << " " 
-                            << spheres[sphere_count].radius << " "
-			    << spheres[sphere_count].pos.x
-			    <<  " " <<spheres[sphere_count].pos.y
-			    <<  " " <<spheres[sphere_count].pos.z << std::endl << std::endl;
-                sphere_count++;
-            }
-        }*/
-	int time2 = time(NULL);
+        int sphere_count=0;
+        int time2 = time(NULL);
 	srand(12345); //define random seed
 
 	std::default_random_engine generator;
@@ -490,22 +477,22 @@ int main(int argc, char* argv[])
 		//sphere without immediate intersection(into a valid location) at the top
 		//of a container. If this fails many times, give up.
 		int tries = 0;
-		while(!placed && tries<15)
+		double radius = distribution(generator);
+		radius = rand_range(R_MIN, R_MAX);
+		while(!placed && tries<1000000)
 		{
 			tries++;
 			bool posfail = false;
 			
 			//Pick random radius and x,y
-			double radius = distribution(generator);
-			radius = rand_range(R_MIN, R_MAX);
 			vec3 pos;
 			pos.x = rand_range(radius, X_MAX - radius);
 			pos.y = rand_range(radius, Y_MAX - radius);
-			pos.z = rand_range(radius, Z_MAX - radius);
+			pos.z = Z_MAX - radius;
 			//pos.x = 5;
 			//pos.y = 5;
 			//pos.z = Z_MAX - radius;
-			if(pos.z-radius<0)posfail=true;
+			//if(pos.z-radius<0)posfail=true;
 			//make sure there is no immediate intersection
 			if(check_intersect(radius,pos,i,1,1,1)!=-1)
 			{
@@ -532,6 +519,7 @@ int main(int argc, char* argv[])
 			    {
 				if(check_intersect(s.radius-SMIDGE, s.pos, i, 1, 1, 1 )!=-1){
 				    std::cout << "Something Bad Just Happened" << std::endl;
+                                    return 0;
 				}
 				std::cout << "The contact array is currently: " << 
 				    contact[0] << ", " <<
@@ -579,7 +567,7 @@ int main(int argc, char* argv[])
 						break;
 					}
 					if(collision!=-1){
-					    state=2;
+					    state=3;
 					    contact[1]=collision;
 					}
 					else{
@@ -634,7 +622,7 @@ int main(int argc, char* argv[])
 				break;
 				}
 				else{
-		                        if(check_intersect(s.radius-0.1, s.pos, i, 1, 1, 1 )!=-1) continue;
+		                        //if(check_intersect(s.radius-0.1, s.pos, i, 1, 1, 1 )!=-1) continue;
 					placed = true;
 					spheres[i].radius = s.radius;
 					spheres[i].pos.x = s.pos.x;
@@ -647,34 +635,35 @@ int main(int argc, char* argv[])
 		{
 			//std::cout << "ERR::PLACEMENT // Placing sphere" << i << " failed" << std::endl;
 		}
+                if(tries>=10000)break;
 		else{
-                
+                sphere_count++;
                 volume += (4.0/3.0) * PI * pow(spheres[i].radius, 3.0);
 		std::cout   <<  spheres[i].radius << " "
 			    << spheres[i].pos.x
 			    <<  " " <<spheres[i].pos.y
 			    <<  " " <<spheres[i].pos.z << std::endl << std::endl;
-                out << i << " " 
+                out << i << " "
                             << spheres[i].radius << " "
 			    << spheres[i].pos.x
 			    <<  " " <<spheres[i].pos.y
-			    <<  " " <<spheres[i].pos.z << std::endl << std::endl;
+			    <<  " " <<spheres[i].pos.z << std::endl;
 		}
 	}
         out.close();
 	std::cout << "===================" << std::endl;
-	for(int i=0; i<NUM_SPHERES; i++){
+	for(int i=0; i<sphere_count; i++){
 		std::cout   <<  spheres[i].radius << " "
 			    << spheres[i].pos.x
 			    <<  " " <<spheres[i].pos.y
 			    <<  " " <<spheres[i].pos.z << std::endl;
 	}
-	/*std::cout   << "INF::VOLUME // Total Container Volume is "
+	std::cout   << "INF::VOLUME // Total Container Volume is "
 		    << X_MAX*Y_MAX*Z_MAX << std::endl;
 	std::cout   << "INF::VOLUME // Total Sphere Volume is "
 		    << volume << std::endl;
 	std::cout   << "INF::VOLUME // Occupied Volume Ratio is "
-		    << volume/(X_MAX*Y_MAX*Z_MAX) << std::endl;*/
+		    << volume/(X_MAX*Y_MAX*Z_MAX) << std::endl;
 	return 0;
 }
 
