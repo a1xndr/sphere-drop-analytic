@@ -56,7 +56,7 @@ int check_intersect(double radius, vec3 pos, double i, bool fastx, bool fasty, b
 
 std::vector<int> check_intersects(double radius, vec3 pos, double i, bool fastx, bool fasty, bool fastz){
     std::vector<int> intersects;
-	for(int j=i-1; j >=0; j--)
+    for(int j=i-1; j >=0; j--)
     {
     	if(fastx && abs(pos.x-spheres[j].pos.x) > radius + spheres[j].radius)continue;
     	if(fasty && abs(pos.y-spheres[j].pos.y) > radius + spheres[j].radius)continue;
@@ -88,14 +88,13 @@ int free_fall(sphere *s, int i){
     	if(s->pos.z < spheres[j].pos.z )continue;
     	if(abs(s->pos.x-spheres[j].pos.x) > s->radius + spheres[j].radius)continue;
     	if(abs(s->pos.y-spheres[j].pos.y) > s->radius + spheres[j].radius)continue;
-
 		if( distance(vec3(s->pos.x,s->pos.y,0), vec3(spheres[j].pos.x,spheres[j].pos.y,0))
-			< spheres[j].radius + s->radius - SMIDGE)
+			< spheres[j].radius + s->radius + SMIDGE)
 		{
 			double z_col=spheres[j].pos.z +pow(pow(spheres[j].radius +  s->radius , 2)
 					- pow(spheres[j].pos.x -  s->pos.x , 2) -
 					pow(spheres[j].pos.y -  s->pos.y , 2), 0.5);
-			if(z_col > z_max && s->pos.z>z_max)
+			if(z_col > z_max && s->pos.z>z_col)
 			{
 				z_max = z_col;
 				c_index = j;
@@ -107,7 +106,6 @@ int free_fall(sphere *s, int i){
     if(c_index!=-1 && s->pos.z>z_max){
     	s->pos.z= z_max;
         return c_index;
-    std::cout << "Hit against: " << c_index <<std::endl;
     }
     else {s->pos.z = s->radius;}
     return -1;
@@ -121,9 +119,8 @@ int free_fall(sphere *s, int i){
  * =====================================================================================
  */
 int single_sphere_roll(sphere *s,int j, int i){
-	if(i==3){
 		std::cout << "Entering SSR" <<std::endl;
-	}	//Limit the amount of spheres we run the math against to the radius of the two
+		//Limit the amount of spheres we run the math against to the radius of the two
 	//touching spheres.
     //Assemble the spherical coordinates that we will need to run the toroidal collision math
     double r_traj 	=(s->pos-spheres[j].pos).magnitude();
@@ -136,27 +133,37 @@ int single_sphere_roll(sphere *s,int j, int i){
     std::cout << cosphi << std::endl;
     std::cout << sinphi << std::endl;
     std::cout << costheta << std::endl;
-    std::cout << sinphi << std::endl;
-    
-    double phi 		= asin((s->pos.z-spheres[j].pos.z)/r_traj);
-    double theta 	= atan2((s->pos.y-spheres[j].pos.y),(s->pos.x-spheres[j].pos.x));
+    /*-----------------------------------------------------------------------------
+     *  Add checks for redundancies of the angles.
+     *-----------------------------------------------------------------------------*/
+    double phi 		= asin(sinphi);
+    double theta 	= asin(sintheta);
     vec3 u( costheta,	sintheta, 0);
     vec3 v(-sintheta, costheta, 0);
     vec3 w(0,0,1);
-    
-    double r_collision_volume = (s->pos-spheres[j].pos).magnitude()+spheres[j].radius;
+   
+    double r_collision_volume = (s->pos-spheres[j].pos).magnitude()+s->radius;
     int collision = -1;
     
     std::vector<int> intersects = check_intersects(r_collision_volume,
     		spheres[j].pos, i ,1,1,1);
 
-    double maxsol = 1;
+    double maxsol = cosphi;
+    /*-----------------------------------------------------------------------------
+     *  New phi and T can also be pi
+     *-----------------------------------------------------------------------------*/
     double newphi=0;
     double T = cos(0);
     for(int l=0; l<intersects.size(); l++){
         std::cout << "intersect: " << intersects[l] <<std::endl;
-        vec3 sj = s->pos - spheres[j].pos;
-        vec3 sjprime( u.x * sj.x + 
+        /*-----------------------------------------------------------------------------
+         *  I only need to do this once
+         *-----------------------------------------------------------------------------*/
+        vec3 sj = spheres[intersects[l]].pos - spheres[j].pos;
+        /*-----------------------------------------------------------------------------
+         * This is most likely wrong. u.x * sj.x + u.y*sj.y...
+         *-----------------------------------------------------------------------------*/
+        vec3 sjprime(       u.x * sj.x + 
 			    v.x * sj.y +
 			    w.x * sj.z, 
 			    
@@ -167,15 +174,18 @@ int single_sphere_roll(sphere *s,int j, int i){
 			    u.z * sj.x + 
 			    v.z * sj.y +
 			    w.z * sj.z);
-        if(s->radius+s->radius-sqrt(pow(sqrt(pow(sjprime.x,2)+pow(sjprime.z,2))-s->radius-r_traj,2)+pow(sjprime.y,2))<=0)continue;
+        if(spheres[intersects[l]].radius+s->radius-sqrt(pow(sqrt(pow(sjprime.x,2)+pow(sjprime.z,2))-r_traj,2)+pow(sjprime.y,2))<=0)continue;
         if(intersects[l]==j || intersects[l]==i)continue;
     	//Set up the variables exactly as detailed in the paper.
+        /*-----------------------------------------------------------------------------
+         *  Not going to check.. yet
+         *-----------------------------------------------------------------------------*/
     	double Wx 	= (spheres[intersects[l]].pos.x-spheres[j].pos.x)/(s->radius+spheres[j].radius);
     	double Wy 	= (spheres[intersects[l]].pos.y-spheres[j].pos.y)/(s->radius+spheres[j].radius);
     	double Wz 	= (spheres[intersects[l]].pos.z-spheres[j].pos.z)/(s->radius+spheres[j].radius);
     	double W 	= (spheres[intersects[l]].radius+s->radius)/(s->radius+spheres[j].radius);
 
-    	double K1 	= 2.0*(Wx*cos(theta)+Wy*sin(theta));
+    	double K1 	= 2.0*(Wx*costheta+Wy*sintheta);
     	double K2 	= 2.0*Wz;
     	double K3 	= pow(Wx,2) + pow(Wy,2) + pow(Wz,2) +1 - pow(W,2);
 
@@ -184,26 +194,29 @@ int single_sphere_roll(sphere *s,int j, int i){
     	if(D<0)continue;
     	double T1 = (2*K1*K3 + pow(D,0.5))/(2*(pow(K1,2)+pow(K2,2)));
     	double T2 = (2*K1*K3 - pow(D,0.5))/(2*(pow(K1,2)+pow(K2,2)));
-        //std::cout<<"T1 is " << T1 <<std::endl;
-        //std::cout<<"T2 is " << T2 <<std::endl;
+        std::cout<<"T1 is " << T1 <<std::endl;
+        std::cout<<"T2 is " << T2 <<std::endl;
         if(K2*(K3-K1*T1)<0)T1=T2;
     	if(K2*(K3-K1*T2)<0)T2=T1;
     	if(K2*(K3-K1*T2)<0)continue;
 
 	double sol = std::min(T1, T2);
-        std::cout<<"sol is " << T2 <<std::endl;
-    	double ang1 = acos(T1);
-    	double ang2 = acos(T2);
     	double ang;
-	if(sol<maxsol && sol>0){
+        /*-----------------------------------------------------------------------------
+         *  We dont understand this
+         *-----------------------------------------------------------------------------*/
+	if(sol>maxsol){
 	    maxsol = sol;
             std::cout<<"maxsol is " << maxsol <<std::endl;
 	    collision = intersects[l];
 	}
     }
-    newphi = acos(maxsol); 
+    if(collision==-1)maxsol=1;
+    newphi = acos(maxsol);
+    
     std::cout <<"phi is:" <<newphi <<std::endl;
     std::cout << "hit against: " << collision <<std::endl;
+    /*  
     bool face_intersect=true;
     while(face_intersect)
     {
@@ -218,9 +231,9 @@ int single_sphere_roll(sphere *s,int j, int i){
         else {
             face_intersect = false;
         }
-    }
-        s->pos.x = spheres[j].pos.x + r_traj*cos(theta)*cos(newphi);
-        s->pos.y = spheres[j].pos.y + r_traj*sin(theta)*cos(newphi);
+    }*/
+        s->pos.x = spheres[j].pos.x + r_traj*costheta*maxsol;
+        s->pos.y = spheres[j].pos.y + r_traj*sintheta*maxsol;
         s->pos.z = spheres[j].pos.z + r_traj*sin(newphi);
     return collision;
 }
@@ -454,6 +467,19 @@ int main(int argc, char* argv[])
                 return 0;
             }
         }
+        /*for(double z=0; z < Z_MAX; z+=0.5)
+        {
+            if(z==0)
+            {
+                for(double x=0; x < X_MAX; x+=0.5)
+                {
+                    for(double y=0; y < Y_MAX; y+=0.5)
+                    {
+                    }
+                }
+            }
+        }*/
+        
         std::ofstream out(fn);
 
         int sphere_count=0;
@@ -468,9 +494,6 @@ int main(int argc, char* argv[])
 	//Loop to attempt placement of NUM_SPHERES spheres
 	for(int i=sphere_count; i < NUM_SPHERES; i++)
 	{
-		if(i==15000){
-
-		}
 		bool placed=false;
 
 		//In this simulation "tries" keeps a count of all the attempts to place a 
@@ -519,7 +542,7 @@ int main(int argc, char* argv[])
 			    {
 				if(check_intersect(s.radius-SMIDGE, s.pos, i, 1, 1, 1 )!=-1){
 				    std::cout << "Something Bad Just Happened" << std::endl;
-                                    return 0;
+                                    //return 0;
 				}
 				std::cout << "The contact array is currently: " << 
 				    contact[0] << ", " <<
@@ -527,7 +550,6 @@ int main(int argc, char* argv[])
 				    contact[2] << std::endl;
 				switch(state)
 				{
-
 				    case 0:
 				    collision=free_fall(&s, i);
 				    std::cout   << "FF:"

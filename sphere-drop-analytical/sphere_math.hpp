@@ -18,7 +18,7 @@
 
 
 #define PI 3.14159265
-#define SMIDGE 0.0001
+#define SMIDGE 0.00000001
 
 #ifndef SPHERE_MATH_HPP
 #define SPHERE_MATH_HPP
