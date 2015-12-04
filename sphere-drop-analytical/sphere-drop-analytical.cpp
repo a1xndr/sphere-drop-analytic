@@ -123,7 +123,8 @@ int single_sphere_roll(sphere *s,int j, int i){
 		//Limit the amount of spheres we run the math against to the radius of the two
 	//touching spheres.
     //Assemble the spherical coordinates that we will need to run the toroidal collision math
-    double r_traj 	=(s->pos-spheres[j].pos).magnitude();
+    vec3 v_traj 	=(s->pos-spheres[j].pos);
+    double r_traj 	=v_traj.magnitude();
     double d = sqrt(pow((s->pos.x-spheres[j].pos.x),2) + pow((s->pos.y-spheres[j].pos.y),2));
     double cosphi     = d/(r_traj);
     double sinphi     = (s->pos.z-spheres[j].pos.z)/(r_traj);
@@ -164,6 +165,8 @@ int single_sphere_roll(sphere *s,int j, int i){
 
          *-----------------------------------------------------------------------------*/
         vec3 sj = spheres[intersects[l]].pos - spheres[j].pos;
+        if(dot_product((vec3){v_traj.x,v_traj.y,0},(vec3){sj.x,sj.y,0})<0)continue;
+        
         /*-----------------------------------------------------------------------------
          * This is most likely wrong. u.x * sj.x + u.y*sj.y...
          *-----------------------------------------------------------------------------*/
@@ -232,16 +235,20 @@ int single_sphere_roll(sphere *s,int j, int i){
         {
             sol=std::max(T1,T2);
             double phi_l = -asin((spheres[j].pos.z-spheres[intersects[l]].pos.z)/((spheres[j].pos-spheres[intersects[l]].pos).magnitude()));
-            if(acos(sol)*(-1)<phi_l){
-                std::cout<<"     skipped due to both intersections being below z=0"<<std::endl;
+//            if(spheres[j].pos.z>spheres[intersects[l]].pos.z+spheres[intersects[l]].radius){
+ 
+            double relx = r_traj*costheta*sol;
+            double rely = r_traj*sintheta*sol;
+            if((vec3){relx,rely,0}.magnitude()<((vec3){v_traj.x,v_traj.y,0}).magnitude()){
+            std::cout<<"     skipped due to both intersections being below z=0"<<std::endl;
+                std::cout<<"     -acos(sol):" << -acos(sol)<<std::endl;
                 std::cout<<"     phi_l: " <<phi_l<<std::endl;
-                std::cout<<"     -acos(sol):" << acos(sol)*(-1)<<std::endl;
                 continue;
             }
         }
-        std::cout<<"sol is " << sol <<std::endl;
+        std::cout<<"     sol is " << sol <<std::endl;
 	double z =  r_traj*sin(acos(sol));
-        std::cout<<"z is " << z <<std::endl;
+        std::cout<<"     z is " << z <<std::endl;
         /*-----------------------------------------------------------------------------
          *  We dont understand this
          *-----------------------------------------------------------------------------*/
@@ -581,7 +588,8 @@ int main(int argc, char* argv[])
 				    std::cout << "Intersection with: "<< check_intersect(s.radius-SMIDGE, s.pos, i, 1, 1, 1) << std::endl; 
                                     return 0;
 				}
-				std::cout << "The contact array is currently: " << 
+			        if(s.pos.x-s.radius<0 || s.pos.y-s.radius<0 || s.pos.z-s.radius <0 || s.pos.x+s.radius>X_MAX || s.pos.y+s.radius>Y_MAX || s.pos.z+s.radius > Z_MAX)break;
+                                std::cout << "The contact array is currently: " << 
 				    contact[0] << ", " <<
 				    contact[1] << ", " <<
 				    contact[2] << std::endl;
