@@ -44,9 +44,9 @@ struct sphere spheres[NUM_SPHERES];
 int check_intersect(double radius, vec3 pos, double i, bool fastx, bool fasty, bool fastz){
     for(int j=i-1; j >=0; j--)
     {
-    	if(fastx && abs(pos.x-spheres[j].pos.x) > radius + spheres[j].radius)continue;
-    	if(fasty && abs(pos.y-spheres[j].pos.y) > radius + spheres[j].radius)continue;
-    	if(fastz && abs(pos.z-spheres[j].pos.z) > radius + spheres[j].radius)continue;
+    	if(fastx && fabs(pos.x-spheres[j].pos.x) > radius + spheres[j].radius)continue;
+    	if(fasty && fabs(pos.y-spheres[j].pos.y) > radius + spheres[j].radius)continue;
+    	if(fastz && fabs(pos.z-spheres[j].pos.z) > radius + spheres[j].radius)continue;
     	//Square of distance between two centers comparison against square of radius.
     	if( distance(pos,spheres[j].pos)
 	    < spheres[j].radius + radius - SMIDGE)return j;
@@ -58,9 +58,9 @@ std::vector<int> check_intersects(double radius, vec3 pos, double i, bool fastx,
     std::vector<int> intersects;
     for(int j=i-1; j >=0; j--)
     {
-    	if(fastx && abs(pos.x-spheres[j].pos.x) > radius + spheres[j].radius)continue;
-    	if(fasty && abs(pos.y-spheres[j].pos.y) > radius + spheres[j].radius)continue;
-    	if(fastz && abs(pos.z-spheres[j].pos.z) > radius + spheres[j].radius)continue;
+    	if(fastx && fabs(pos.x-spheres[j].pos.x) > radius + spheres[j].radius)continue;
+    	if(fasty && fabs(pos.y-spheres[j].pos.y) > radius + spheres[j].radius)continue;
+    	if(fastz && fabs(pos.z-spheres[j].pos.z) > radius + spheres[j].radius)continue;
     	//Square of distance between two centers comparison against square of radius.
     	if( distance(pos,spheres[j].pos)
 	    < spheres[j].radius + radius - SMIDGE)intersects.push_back(j);
@@ -86,8 +86,8 @@ int free_fall(sphere *s, int i){
     for(int j=i-1; j>=0; j--)
     {
     	if(s->pos.z < spheres[j].pos.z )continue;
-    	if(abs(s->pos.x-spheres[j].pos.x) > s->radius + spheres[j].radius)continue;
-    	if(abs(s->pos.y-spheres[j].pos.y) > s->radius + spheres[j].radius)continue;
+    	if(fabs(s->pos.x-spheres[j].pos.x) > s->radius + spheres[j].radius)continue;
+    	if(fabs(s->pos.y-spheres[j].pos.y) > s->radius + spheres[j].radius)continue;
 		if( distance(vec3(s->pos.x,s->pos.y,0), vec3(spheres[j].pos.x,spheres[j].pos.y,0))
 			< spheres[j].radius + s->radius + SMIDGE)
 		{
@@ -150,6 +150,7 @@ int single_sphere_roll(sphere *s,int j, int i){
     		spheres[j].pos, i ,1,1,1);
 
     double maxsol = 1;
+    double minz = 0;
     std::cout<<"maxsol is " << maxsol <<std::endl;
     /*-----------------------------------------------------------------------------
      *  New phi and T can also be pi
@@ -192,35 +193,61 @@ int single_sphere_roll(sphere *s,int j, int i){
     	double K2 	= 2.0*Wz;
     	double K3 	= pow(Wx,2) + pow(Wy,2) + pow(Wz,2) +1 - pow(W,2);
 
+        std::cout<<"     Wx:" << Wx << std::endl;
+        std::cout<<"     Wy:" << Wy << std::endl;
+        std::cout<<"     Wz:" << Wz << std::endl;
+        std::cout<<"     W:" << W << std::endl;
+        std::cout<<"     K1:" << K1 << std::endl;
+        std::cout<<"     K2:" << K2 << std::endl;
+        std::cout<<"     K3:" << K3 << std::endl;
+
         //Now solve the quadratic equation
     	double D = pow(2*K1*K3,2)-4*(pow(K1,2)+pow(K2,2))*(pow(K3,2)-pow(K2,2));
-    	if(abs(D)<SMIDGE)D=0;
-        std::cout<<"D is " << D <<std::endl;
+    	if(fabs(D)<0.0000000001)D=0;
+        std::cout<<"     D is " << D <<std::endl;
         if(D<0) continue;
     	double T1 = (2*K1*K3 + sqrt(D))/(2*(pow(K1,2)+pow(K2,2)));
     	double T2 = (2*K1*K3 - sqrt(D))/(2*(pow(K1,2)+pow(K2,2)));
-        std::cout<<"T1 is " << T1 <<std::endl;
-        std::cout<<"T2 is " << T2 <<std::endl;
-        std::cout << "K2*(K3-K1*T1)="<<K2*(K3-K1*T1) <<std::endl; 
-        std::cout << "K2*(K3-K1*T2)="<<K2*(K3-K1*T2) <<std::endl; 
+        std::cout<<"     T1 is " << T1 <<std::endl;
+        std::cout<<"     T2 is " << T2 <<std::endl;
+        std::cout << "     K2*(K3-K1*T1)="<<K2*(K3-K1*T1) <<std::endl; 
+        std::cout << "     K2*(K3-K1*T2)="<<K2*(K3-K1*T2) <<std::endl; 
         if(K2*(K3-K1*T1)<0)
         {
-            std::cout << "changed" <<std::endl;
+            std::cout << "     changed" <<std::endl;
             T1=T2;
         }
-    	if(K2*(K3-K1*T2)<0){
+    	if(K2*(K3-K1*T2)<0)
+        {
+            std::cout << "     changed" <<std::endl;
             T2=T1;
-            std::cout << "changed" <<std::endl;
         }
     	if(K2*(K3-K1*T2)<0)continue;
-
-	double sol = std::min(T1, T2);
+        double sol=0;
+        if(spheres[intersects[l]].pos.z-spheres[j].pos.z>=0)
+        {
+            sol=std::min(T1,T2);
+        }
+        else
+        {
+            sol=std::max(T1,T2);
+            double phi_l = -asin((spheres[j].pos.z-spheres[intersects[l]].pos.z)/((spheres[j].pos-spheres[intersects[l]].pos).magnitude()));
+            if(acos(sol)*(-1)<phi_l){
+                std::cout<<"     skipped due to both intersections being below z=0"<<std::endl;
+                std::cout<<"     phi_l: " <<phi_l<<std::endl;
+                std::cout<<"     -acos(sol):" << acos(sol)*(-1)<<std::endl;
+                continue;
+            }
+        }
         std::cout<<"sol is " << sol <<std::endl;
+	double z =  r_traj*sin(acos(sol));
+        std::cout<<"z is " << z <<std::endl;
         /*-----------------------------------------------------------------------------
          *  We dont understand this
          *-----------------------------------------------------------------------------*/
-	if(sol>cosphi && sol<maxsol){
+	if(z>minz && z <(s->pos-spheres[j].pos).z ){
 	    maxsol = sol;
+	    minz =  z;
             std::cout<<"maxsol is " << maxsol <<std::endl;
 	    collision = intersects[l];
 	}
@@ -232,11 +259,11 @@ int single_sphere_roll(sphere *s,int j, int i){
     std::cout << "hit against: " << collision <<std::endl;
     std::cout << "new z is:" << spheres[j].pos.z + r_traj*sin(newphi) << std::endl;
 
-    if(spheres[j].pos.z + r_traj*sin(newphi) - s->radius < 0 )
+    /*  if(spheres[j].pos.z + r_traj*sin(newphi) - s->radius < 0 )
     {   
         collision==-1;
         newphi=asin((s->pos.z-spheres[j].pos.z)/(r_traj));
-    }
+    }*/
     
     s->pos.x = spheres[j].pos.x + r_traj*costheta*maxsol;
     s->pos.y = spheres[j].pos.y + r_traj*sintheta*maxsol;
@@ -548,6 +575,10 @@ int main(int argc, char* argv[])
 			    {
 				if(check_intersect(s.radius-SMIDGE, s.pos, i, 1, 1, 1 )!=-1){
 				    std::cout << "Something Bad Just Happened" << std::endl;
+				    std::cout << "Intersection of magnitude: " << 
+                                        (spheres[check_intersect(s.radius-SMIDGE, s.pos, i, 1, 1, 1)].pos - s.pos).magnitude()
+                                        -0.5*2<< std::endl;
+				    std::cout << "Intersection with: "<< check_intersect(s.radius-SMIDGE, s.pos, i, 1, 1, 1) << std::endl; 
                                     return 0;
 				}
 				std::cout << "The contact array is currently: " << 
