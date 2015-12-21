@@ -33,8 +33,8 @@ const int NUM_SPHERES = 10000000;
 int X_MAX = 10;
 int Y_MAX = 10;
 int Z_MAX = 10;
-double R_MIN = 0.5;
-double R_MAX = 0.5;
+double R_MIN = 0.01;
+double R_MAX = 0.1;
 double STEP = 0.001;
 
 
@@ -147,8 +147,8 @@ int single_sphere_roll(sphere *s,int j, int i){
     double r_collision_volume = (s->pos-spheres[j].pos).magnitude()+s->radius;
     int collision = -1;
     
-    std::vector<int> intersects = check_intersects(r_collision_volume,
-    		spheres[j].pos, i ,1,1,1);
+    std::vector<int> intersects = check_intersects( r_collision_volume,
+    		                                    spheres[j].pos, i ,1,1,1);
 
     double maxsol = 1;
     double minz = 0;
@@ -181,12 +181,15 @@ int single_sphere_roll(sphere *s,int j, int i){
 			    w.x * sj.x + 
 			    w.y * sj.y +
 			    w.z * sj.z);
-        if(spheres[intersects[l]].radius+s->radius-sqrt(pow(sqrt(pow(sjprime.x,2)+pow(sjprime.z,2))-r_traj,2)+pow(sjprime.y,2))<=0)continue;
+        if(     spheres[intersects[l]].radius+
+                s->radius-
+                sqrt(pow(sqrt(pow(sjprime.x,2)+
+                pow(sjprime.z,2))-r_traj,2)+
+                pow(sjprime.y,2))
+                <=0
+        )continue;
+        
         if(intersects[l]==j || intersects[l]==i)continue;
-    	//Set up the variables exactly as detailed in the paper.
-        /*-----------------------------------------------------------------------------
-         *  Not going to check.. yet
-         *-----------------------------------------------------------------------------*/
     	double Wx 	= (spheres[intersects[l]].pos.x-spheres[j].pos.x)/(s->radius+spheres[j].radius);
     	double Wy 	= (spheres[intersects[l]].pos.y-spheres[j].pos.y)/(s->radius+spheres[j].radius);
     	double Wz 	= (spheres[intersects[l]].pos.z-spheres[j].pos.z)/(s->radius+spheres[j].radius);
@@ -285,18 +288,15 @@ int single_sphere_roll(sphere *s,int j, int i){
  * =====================================================================================
  */
 int double_sphere_roll(sphere *s,int j,int k, int i){
-    // All notation follows the paper j=s2, k=s3 etc
-    
-    //We define a new coordinate basis u, v, w
-    if(i==13){
-	std::cout << "Culprit found" << std::endl;
-    }
-    //Vector between two spheres of contact
-    vec3 c2c3 = spheres[k].pos - spheres[j].pos;   
+    std::cout << "Entering DSR" <<std::endl;
 
+    int collision_index = -1;
+    //Vector between two spheres of contact
+    vec3 c2c3 = spheres[k].pos - spheres[j].pos; 
+
+    //We define a new coordinate basis u, v, w
     // Basis vector u: Normalized vector c2c3
-    vec3 u(c2c3.x/c2c3.magnitude(), c2c3.y/c2c3.magnitude(), c2c3.z/c2c3.magnitude());
-    u.equals(u.normalize());
+    vec3 u = c2c3.normalize();
     // Basis vector v: k-(k.u)u
     vec3 v( 0-(u.z)*u.x,
 	    0-(u.z)*u.y,
@@ -304,37 +304,76 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
     v.equals(v.normalize());
     //Basis vector w: u x v
     vec3 w = cross_product(u,v);
-    std::cout << "u is " << u.x << ", "<< u.y << " " << u.z<< std::endl;
-    std::cout << "v is " << v.x << ", "<< v.y << " " << v.z<< std::endl;
-    std::cout << "w is " << w.x << ", "<< w.y << " " << w.z<< std::endl;
+    std::cout << "u: " << u.x << ", "<< u.y << " " << u.z<< std::endl;
+    std::cout << "v: " << v.x << ", "<< v.y << " " << v.z<< std::endl;
+    std::cout << "w: " << w.x << ", "<< w.y << " " << w.z<< std::endl;
 
     vec3 c2_omega = c2c3.scalar_multiply(
-		dot_product(s->pos-spheres[j].pos,spheres[k].pos-spheres[j].pos)
-		/pow(c2c3.magnitude(),2));
-    vec3 c2c3_norm(c2c3.x/c2c3.magnitude(), c2c3.y/c2c3.magnitude(), c2c3.z/c2c3.magnitude());
-    vec3 omega = c2c3_norm.scalar_multiply(dot_product(s->pos,c2c3_norm)); 
-    omega = c2_omega + spheres[j].pos;
-    vec3 omega_s = s->pos - omega;
+		                        dot_product(s->pos-spheres[j].pos,
+                                                    spheres[k].pos-spheres[j].pos)
+		                        /pow(c2c3.magnitude(),2));
+    vec3 c2c3_norm  = c2c3.normalize();
+    vec3 omega      = c2_omega + spheres[j].pos;
+    vec3 omega_s    = s->pos - omega;
 
+    // Make a list of spherers intersecting the collision volume centered at omega 
+    std::vector<int> E4 = check_intersects(omega_s.magnitude() + spheres[j].radius,
+    		omega , i ,1,1,1);
 
-    std::vector<int> intersects = check_intersects(omega_s.magnitude() + spheres[j].radius,
-    		spheres[j].pos, i ,1,1,1);
+    std::vector<int> intersects;
+    for(int l=0; l<E4.size(); l++)
+    {
+	std::cout   << "E4: " << E4[l] << std::endl;
+        vec3 omega_c = spheres[E4[l]].pos - omega;
+        vec3 cprime(dot_product(omega_c, u),dot_product(omega_c, v),dot_product(omega_c, w));
+        std::cout <<"For " << E4[l] <<"our criterion is"  <<
+            s->radius - pow(pow(pow(pow(cprime.y,2)+pow(cprime.z ,2) ,0.5) 
+			    - s->radius - omega_s.magnitude(),2) + pow(cprime.x,2),0.5) 
+			    + spheres[E4[l]].radius << std::endl;
+        if(s->radius - pow(pow(pow(pow(cprime.y,2)+pow(cprime.z ,2) ,0.5) 
+			    - s->radius - omega_s.magnitude(),2) + pow(cprime.x,2),0.5) 
+			    + spheres[E4[l]].radius >= -0.2)
+        {
+            intersects.push_back(E4[l]);
+        }
+    }
 
+    if(intersects.size()==0)
+    {
+        vec3 omega_s_prime = v.scalar_multiply(-omega_s.magnitude());
+	s->pos.equals(omega+omega_s_prime);
+	if(s->pos.z<=std::min(spheres[k].pos.z,spheres[j].pos.z))
+	{
+	    collision_index = -1;
+	}
+	else if(s->pos.z>spheres[k].pos.z){
+	    collision_index = k;
+	}
+        return collision_index;
+    }
+    //Set up Beta
     double beta_min = acos(w.x);
     double beta = acos(dot_product(omega_s,v)/omega_s.magnitude());
     if(dot_product(omega_s,w)<0) beta *= -1.;
     int sign_coef = 1;
     if(beta<0)sign_coef=-1;
+    double minang=beta;
+    double maxang=PI;
+
+    if(beta<0)
+    {
+        minang=PI;
+        maxang=beta;
+    }
+
     std::cout << "sign_coef is " << sign_coef << std::endl;
     std::cout << "beta is " << beta << std::endl;
-    double T=-1;
-    int collision_index =-1;
     int false_values=0;
 
-    vec3 stform(dot_product(omega_s, u),dot_product(omega_s, v),dot_product(omega_s, w));
-    std::cout << "s in our new coordinates is " << stform.x << ", "<< stform.y << " " << stform.z<< std::endl;
+    double T=-1;
     for(int l=0; l<intersects.size(); l++)
     {
+	std::cout   << "intersect: " << intersects[l] << std::endl;
 	//if(i==6) continue;
 	if(intersects[l]==j || intersects[l]==k)
 	{
@@ -345,12 +384,6 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
 	vec3 omega_c = spheres[intersects[l]].pos - omega;
 	vec3 cprime(dot_product(omega_c, u),dot_product(omega_c, v),dot_product(omega_c, w));
 	
-	if(s->radius - pow(pow(pow( pow(cprime.y,2)+pow(cprime.z ,2) ,0.5) 
-			    - s->radius - omega_s.magnitude(),2) + pow(cprime.x,2),0.5) 
-			    + spheres[intersects[l]].radius <= SMIDGE){
-	    false_values++;
-	    continue;
-		}
 	double K1 	= cprime.y;
 	double K2 	= cprime.z*sign_coef;
 	double K3 	= (pow(cprime.x,2) + pow(cprime.y,2) + pow(cprime.z,2) 
@@ -358,75 +391,83 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
 		- pow(s->radius+spheres[intersects[l]].radius,2))/(2*omega_s.magnitude());
     
 	double D = pow(2*K1*K3,2)-4*(pow(K1,2)+pow(K2,2))*(pow(K3,2)-pow(K2,2));
+    	if(fabs(D)<0.0000000001)D=0;
+        std::cout<<"     D is " << D <<std::endl;
 	if(D<0)continue;
 	double T1 = (2*K1*K3 + pow(D,0.5))/(2*(pow(K1,2)+pow(K2,2)));
 	double T2 = (2*K1*K3 - pow(D,0.5))/(2*(pow(K1,2)+pow(K2,2)));
-	std::cout   << "Found solutions with sphere: " << intersects[l] <<
-			" with T1 corresponding to "<< T1 <<" and T2 to " <<
-		       T2 << std::endl;
-	std::cout << "Checking sphere " << intersects[l] << std::endl;	
+	std::cout   << "     T1: "<< T1 << std::endl;
+	std::cout   << "     T2: "<< T2 << std::endl;
+	std::cout << "     Checking sphere " << intersects[l] << std::endl;	
     	double betaprime = sign_coef * acos(T1);
 	vec3 sprime(0, omega_s.magnitude() * cos(betaprime), omega_s.magnitude()*sin(betaprime));
 	vec3 omega_s_prime( u.x * sprime.x + 
-			    v.x * sprime.y +
-			    w.x * sprime.z, 
+			    u.y * sprime.y +
+			    u.z * sprime.z, 
 			    
-			    u.y * sprime.x + 
+			    v.x * sprime.x + 
 			    v.y * sprime.y +
-			    w.y * sprime.z, 
+			    v.z * sprime.z, 
 
-			    u.z * sprime.x + 
-			    v.z * sprime.y +
+			    w.x * sprime.x + 
+			    w.y * sprime.y +
 			    w.z * sprime.z);
 	vec3 s_prime=omega+omega_s_prime;
 
-	std::cout <<"T1: "<< T1 <<" | "<< s_prime.x << " "<< s_prime.y << " " << s_prime.z<< std::endl;
+	std::cout <<"     T1: "<< T1 <<" | "<< s_prime.x << " "<< s_prime.y << " " << s_prime.z<< std::endl;
     	betaprime = sign_coef * acos(T2);
 	vec3 sprime2(0, omega_s.magnitude() * cos(betaprime), omega_s.magnitude()*sin(betaprime));
-	vec3 omega_s_prime2( u.x * sprime2.x + 
-			    v.x * sprime2.y +
-			    w.x * sprime2.z, 
+	vec3 omega_s_prime2(u.x * sprime2.x + 
+			    u.y * sprime2.y +
+			    u.z * sprime2.z, 
 			    
-			    u.y * sprime2.x + 
+			    v.x * sprime2.x + 
 			    v.y * sprime2.y +
-			    w.y * sprime2.z, 
+			    v.z * sprime2.z, 
 
-			    u.z * sprime2.x + 
-			    v.z * sprime2.y +
+			    w.x * sprime2.x + 
+			    w.y * sprime2.y +
 			    w.z * sprime2.z);
 	vec3 s_prime2=omega+omega_s_prime2;
-	std::cout <<"T2: "<< T2 <<" | "<< s_prime2.x << " "<< s_prime2.y << " " << s_prime2.z<< std::endl;
+	std::cout <<"     T2: "<< T2 <<" | "<< s_prime2.x << " "<< s_prime2.y << " " << s_prime2.z<< std::endl;
 	//double sol = std::max(T1,T2);
-	if(K2*(K3-K1*T1)<0)T1=T2;
-	if(K2*(K3-K1*T2)<0)T2=T1;
-	if(K2*(K3-K1*T2)<0)continue;
+	if(K2*(K3-K1*T1)<-SMIDGE)T1=T2;
+	if(K2*(K3-K1*T2)<-SMIDGE)T2=T1;
+	if(K2*(K3-K1*T2)<-SMIDGE){
+            std::cout << "     skipping: K2*(K3-K1*T2) = " << K2*(K3-K1*T2) << std::endl;
+            continue;
+        }
 	double sol;
 	/*-----------------------------------------------------------------------------
 	 *  Method described in paper
 	 *-----------------------------------------------------------------------------*/
 	sol = std::max(T1,T2);
-	if(sol>T){
-	    T=sol;
-	    collision_index=intersects[l];
+	if(sol>T){  
+            double betaprime = sign_coef * acos(sol);
+            //if(i==6)betaprime= betaprime;
+            vec3 sprime(0, omega_s.magnitude() * cos(betaprime), omega_s.magnitude()*sin(betaprime));
+            vec3 omega_s_prime( u.x * sprime.x + 
+                                v.x * sprime.y +
+                                w.x * sprime.z, 
+                                
+                                u.y * sprime.x + 
+                                v.y * sprime.y +
+                                w.y * sprime.z, 
+
+                                u.z * sprime.x + 
+                                v.z * sprime.y +
+                                w.z * sprime.z);
+            if(s->pos.z>(omega+omega_s_prime).z)
+            {
+                T=sol;
+	        collision_index=intersects[l];
+            }
 	}
 
     }
-    if(T==1)
-    {
-	vec3 omega_s_prime = v.scalar_multiply(-omega_s.magnitude());
-	s->pos.equals(omega+omega_s_prime);
-	if(s->pos.z<=std::min(spheres[k].pos.z,spheres[j].pos.z))
-	{
-	    collision_index = -1;
-	}
-	else if(s->pos.z>spheres[k].pos.z){
-	    collision_index = k;
-	}
-    }
-    else
-    {
 	std::cout   << "We will use T=" << T <<
-			" corresponding to "<< acos(T) << std::endl;
+			" corresponding to "<< sign_coef*acos(T) <<" and sphere:"
+                        << collision_index << std::endl;
     	double betaprime = sign_coef * acos(T);
 	//if(i==6)betaprime= betaprime;
 	vec3 sprime(0, omega_s.magnitude() * cos(betaprime), omega_s.magnitude()*sin(betaprime));
@@ -442,7 +483,6 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
 			    v.z * sprime.y +
 			    w.z * sprime.z);
        s->pos.equals(omega+omega_s_prime);	
-    }
 
     if(s->pos.z-s->radius<0)
     {
@@ -507,18 +547,6 @@ int main(int argc, char* argv[])
                 return 0;
             }
         }
-        /*for(double z=0; z < Z_MAX; z+=0.5)
-        {
-            if(z==0)
-            {
-                for(double x=0; x < X_MAX; x+=0.5)
-                {
-                    for(double y=0; y < Y_MAX; y+=0.5)
-                    {
-                    }
-                }
-            }
-        }*/
         
         std::ofstream out(fn);
 
@@ -551,7 +579,8 @@ int main(int argc, char* argv[])
 			vec3 pos;
 			pos.x = rand_range(radius, X_MAX - radius);
 			pos.y = rand_range(radius, Y_MAX - radius);
-			pos.z = Z_MAX - radius;
+			pos.z = rand_range(radius, Z_MAX - radius);
+			//pos.z = Z_MAX - radius;
 			//pos.x = 5;
 			//pos.y = 5;
 			//pos.z = Z_MAX - radius;
@@ -572,6 +601,7 @@ int main(int argc, char* argv[])
 			    int collision;
 			    //Logic to iterate between modes by interpreting the
 			    //return codes
+	                    std::cout << "========================================================" << std::endl;
 			    std::cout   << "NEW SPHERE: "
 			    		<< i << std::endl;
 			    std::cout   << "INIT:"
@@ -586,7 +616,7 @@ int main(int argc, char* argv[])
                                         (spheres[check_intersect(s.radius-SMIDGE, s.pos, i, 1, 1, 1)].pos - s.pos).magnitude()
                                         -0.5*2<< std::endl;
 				    std::cout << "Intersection with: "<< check_intersect(s.radius-SMIDGE, s.pos, i, 1, 1, 1) << std::endl; 
-                                    return 0;
+                                    
 				}
 			        if(s.pos.x-s.radius<0 || s.pos.y-s.radius<0 || s.pos.z-s.radius <0 || s.pos.x+s.radius>X_MAX || s.pos.y+s.radius>Y_MAX || s.pos.z+s.radius > Z_MAX)break;
                                 std::cout << "The contact array is currently: " << 
@@ -616,7 +646,7 @@ int main(int argc, char* argv[])
 						<< s.pos.y << " "
 						<< s.pos.z<< std::endl;
 					if(collision!=-1){
-					    state=3;
+					    state=2;
 					    contact[1]=collision;
 					}
 					else{
@@ -625,21 +655,12 @@ int main(int argc, char* argv[])
 					}
 					break;
 				    case 2:
-                                        state=3;
-                                        break;
 					collision=double_sphere_roll(&s, contact[0],contact[1], i);
 					std::cout   << "DSR:"
 				    		<< s.pos.x << " "
 							<< s.pos.y << " "
 							<< s.pos.z<< std::endl;
-					if( s.pos.x-radius+SMIDGE<0  || 
-					    s.pos.y-radius+SMIDGE<0  ||
-					    s.pos.x+radius-SMIDGE>10 || 
-					    s.pos.y+radius-SMIDGE>10){	
-						state=3;
-						break;
-					}
-					if(collision!=-1){
+                                        if(collision!=-1){
 					    if(collision==contact[1]){
 						state = 1;
 						contact[0]=contact[1];
@@ -672,7 +693,7 @@ int main(int argc, char* argv[])
 		{
 			//std::cout << "ERR::PLACEMENT // Placing sphere" << i << " failed" << std::endl;
 		}
-                if(tries>=10000)break;
+                if(tries>=1000000)break;
 		else{
                 sphere_count++;
                 volume += (4.0/3.0) * PI * pow(spheres[i].radius, 3.0);

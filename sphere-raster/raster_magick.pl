@@ -107,7 +107,7 @@ while($layer<10 ){
             $x = int(abs($WIDTH*($spheres[$j]{x}))/$MAX);
             $y = int(abs($WIDTH*(10-$spheres[$j]{y}))/$MAX);
             $img->Draw(fill=>'rgb(250,250,250)',stroke=>'none',primitive=>'circle', points=> $x.','.$y.' '.($x+$radius).','.$y,strokewidth=>0);
-            $img->Annotate(text => $spheres[$j]{number}, geometry => '+'.$x.'+'.$y,pen => 'rgb(250,0,0)', font => 'arial',pointsize => 9);
+            #$img->Annotate(text => $spheres[$j]{number}, geometry => '+'.$x.'+'.$y,pen => 'rgb(250,0,0)', font => 'arial',pointsize => 9);
             #$img->ellipse($diameter,$diameter);
             #$img->moveTo(abs(1000*($spheres[$j]{x}))/$MAX,abs(1000*(10-$spheres[$j]{y}))/$MAX);
             #$img->fgcolor('red');
@@ -180,7 +180,7 @@ for(my $j=0; $j<=$bcount; $j++ ){
     #$img->fontsize(20);
     $ifixed=sprintf("%05d", $i);
     
-    $img->Write(filename=>'aha'.$ifixed.'png', compression=>'None');
+    $img->Write(filename=>'rm'.$ifixed.'png', compression=>'None');
     $filename = 'aha'.$ifixed.'.png';
     open(IMAGE, ">$filename");
     $img->Write(file=>\*IMAGE, filename=>$filename);
