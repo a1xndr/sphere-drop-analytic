@@ -22,6 +22,8 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <sstream>
+#include <ctime>
 #include <iostream>
 #include "sphere_math.hpp"
 #include "sphere.hpp"
@@ -33,8 +35,8 @@ const int NUM_SPHERES = 10000000;
 int X_MAX = 10;
 int Y_MAX = 10;
 int Z_MAX = 10;
-double R_MIN = 0.01;
-double R_MAX = 0.1;
+double R_MIN = 0.1;
+double R_MAX = 0.5;
 double STEP = 0.001;
 
 
@@ -494,7 +496,6 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
 int main(int argc, char* argv[])
 {
 
-        std::string fn = "coords";
         for(int i=0; i< argc; i++)
         {
             std::string arg = argv[i];
@@ -507,36 +508,31 @@ int main(int argc, char* argv[])
             {
                 std::cout<< "Usage: " << argv[0] 
                     << " NUM_SPHERES" << " X_MAX" << " Y_MAX" << " Z_MAX" 
-                    << " R_MIN" << " R_MAX" << " STEP" << " COORDS_FILE" <<  std::endl;
+                    << " R_MIN" << " R_MAX" << " STEP" <<  std::endl;
                 std::cout<< "No args implies hard-coded defaults." << std::endl;
                 return 0;
             }
-            else if(argc==9) {
+            else if(argc==7) {
+                //std::cout << i << ": " <<arg <<std::endl;
                 switch(i)
                 {
-                    case 2:
+                    case 1:
                         //NUM_SPHERES = std::stoi(arg);
                         break;
-                    case 3:
+                    case 2:
                         X_MAX = std::stoi(arg);
                         break;
-                    case 4:
+                    case 3:
                         Y_MAX = std::stoi(arg);
                         break;
-                    case 5:
+                    case 4:
                         Z_MAX = std::stoi(arg);
                         break;
-                    case 6:
+                    case 5:
                         R_MAX = std::stod(arg);
                         break;
-                    case 7:
+                    case 6:
                         R_MIN = std::stod(arg);
-                        break;
-                    case 8:
-                        STEP = std::stod(arg);
-                        break;
-                    case 9:
-                        fn = arg;
                         break;
                     default:
                         break;
@@ -547,12 +543,23 @@ int main(int argc, char* argv[])
                 return 0;
             }
         }
-        
+        time_t now = time(0);
+        tm *tm = localtime(&now);
+        std::ostringstream oss;
+        oss << "sda-coords-" << X_MAX <<"_" << Y_MAX <<"_"<< Z_MAX <<"_"<< 
+            R_MIN <<"_" << R_MAX << "_" 
+            << 1900+tm->tm_year << "-"<< 1+tm->tm_mon << "-"<< tm->tm_mday 
+            << "-"<< 1+tm->tm_hour << 1+tm->tm_min<<1+tm->tm_sec;
+        std::string fn = oss.str();
+        std::cout << "fn is " << fn <<std::endl;
+        std::cout << "argc is " << argc <<std::endl;
+        std::cout << "R_MIN is " << R_MIN <<std::endl;
+        std::cout << "R_MAX is " << R_MAX <<std::endl;
         std::ofstream out(fn);
 
         int sphere_count=0;
         int time2 = time(NULL);
-	srand(12345); //define random seed
+	srand(time2); //define random seed
 
 	std::default_random_engine generator;
 	std::exponential_distribution<double> distribution(35);
@@ -577,6 +584,7 @@ int main(int argc, char* argv[])
 			
 			//Pick random radius and x,y
 			vec3 pos;
+		        radius = rand_range(R_MIN, R_MAX);
 			pos.x = rand_range(radius, X_MAX - radius);
 			pos.y = rand_range(radius, Y_MAX - radius);
 			pos.z = rand_range(radius, Z_MAX - radius);

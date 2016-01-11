@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS= -I. 
+CFLAGS= -I. -std=c++11 
 all: sphere-drop-analytical 
 sphere-drop-analytical: sphere-drop-analytical.o sphere_math.o
 	    $(CC) sphere-drop-analytical.o sphere_math.o -o sphere-drop-analytical -I. -std=c++11 -g

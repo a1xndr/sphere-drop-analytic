@@ -60,7 +60,7 @@ while (my $line = <COORDS2>)
 {
 	chomp $line;
 	my @words = split / /, $line;
-	push(@bubbles, { number=>$words[0], r => $words[1], x => $words[2], y => $words[3], z => $words[4], p=> $words[5]});
+	push(@bubbles, { r => $words[0], x => $words[1], y => $words[2], z => $words[3], p=> $words[4]});
         if($words[4]>$maxpore){$maxpore = $words[4];}
         $volume+=$words[0]**3 * (4/3)*3.14159265;
 	$bcount++;
