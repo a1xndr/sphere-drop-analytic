@@ -2,11 +2,11 @@ CC=g++
 CFLAGS= -I. -std=c++11 
 all: sphere-drop-analytical 
 sphere-drop-analytical: sphere-drop-analytical.o sphere_math.o
-	    $(CC) sphere-drop-analytical.o sphere_math.o -o sphere-drop-analytical -I. -std=c++11 -g
+	    $(CC) sphere-drop-analytical.o sphere_math.o -o sphere-drop-analytical -I. -std=c++11 -o3 
 sphere-drop-analytical.o : sphere-drop-analytical.cpp
-	    $(CC) -c sphere-drop-analytical.cpp  -std=c++11 -g
+	    $(CC) -c sphere-drop-analytical.cpp  -std=c++11
 sphere_math.o : sphere_math.cpp
-	    $(CC) -c sphere_math.cpp -g
+	    $(CC) -c sphere_math.cpp
 clean:
 	    rm *.o
 

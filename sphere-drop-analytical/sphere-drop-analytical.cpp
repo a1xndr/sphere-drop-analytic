@@ -567,7 +567,7 @@ int main(int argc, char* argv[])
 	double volume=0; //total volume occupied by spheres
 	
 	//Loop to attempt placement of NUM_SPHERES spheres
-	for(int i=sphere_count; i < NUM_SPHERES; i++)
+	for(int i=sphere_count; i < 1000; i++)
 	{
 		bool placed=false;
 
@@ -577,7 +577,8 @@ int main(int argc, char* argv[])
 		int tries = 0;
 		double radius = distribution(generator);
 		radius = rand_range(R_MIN, R_MAX);
-		while(!placed && tries<1000000)
+
+                while(!placed && tries<1000000)
 		{
 			tries++;
 			bool posfail = false;
