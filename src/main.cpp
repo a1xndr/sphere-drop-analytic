@@ -567,7 +567,7 @@ int main(int argc, char* argv[])
 	double volume=0; //total volume occupied by spheres
 	
 	//Loop to attempt placement of NUM_SPHERES spheres
-	for(int i=sphere_count; i < 1000; i++)
+	for(int i=sphere_count; i < NUM_SPHERES; i++)
 	{
 		bool placed=false;
 
