@@ -562,7 +562,7 @@ int main(int argc, char* argv[])
 	srand(time2); //define random seed
 
 	std::default_random_engine generator;
-	std::exponential_distribution<double> distribution(35);
+	std::normal_distribution<double> distribution((R_MAX+R_MIN)/2.0f, (R_MAX-R_MIN)/2);
 
 	double volume=0; //total volume occupied by spheres
 	
@@ -577,6 +577,8 @@ int main(int argc, char* argv[])
 		int tries = 0;
 		double radius = distribution(generator);
 		radius = rand_range(R_MIN, R_MAX);
+                if(rand()%2==0)radius = R_MIN;
+                else radius = R_MAX;
 
                 while(!placed && tries<1000000)
 		{
@@ -586,6 +588,9 @@ int main(int argc, char* argv[])
 			//Pick random radius and x,y
 			vec3 pos;
 		        radius = rand_range(R_MIN, R_MAX);
+		        if(rand()%2==0)radius = R_MIN;
+                        else radius = R_MAX;
+		        radius = distribution(generator);
 			pos.x = rand_range(radius, X_MAX - radius);
 			pos.y = rand_range(radius, Y_MAX - radius);
 			pos.z = rand_range(radius, Z_MAX - radius);
