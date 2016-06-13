@@ -493,6 +493,29 @@ int double_sphere_roll(sphere *s,int j,int k, int i){
     return collision_index;
 }
 
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  sphere_cage_gen
+ *  Description:  Places several massive spheres at the edges of the container 
+ *  to simulate flat walls
+ * =====================================================================================
+ */
+int sphere_cage_gen(int num_spheres, double r)
+{
+    spheres[num_spheres]=(sphere){r, (vec3){-r, Y_MAX/2.0, Z_MAX/2.0}}; 
+    num_spheres++;
+    spheres[num_spheres]=(sphere){r, (vec3){X_MAX+r, Y_MAX/2.0, Z_MAX/2.0}}; 
+    num_spheres++;
+    spheres[num_spheres]=(sphere){r, (vec3){X_MAX/2.0, -r, Z_MAX/2.0}}; 
+    num_spheres++;
+    spheres[num_spheres]=(sphere){r, (vec3){X_MAX/2.0, Y_MAX + r, Z_MAX/2.0}}; 
+    num_spheres++;
+    spheres[num_spheres]=(sphere){r, (vec3){X_MAX/2.0, Y_MAX/2.0, -r}}; 
+    num_spheres++;
+    spheres[num_spheres]=(sphere){r, (vec3){X_MAX/2.0, Y_MAX/2.0, Z_MAX + r}};
+    num_spheres++;
+    return num_spheres;
+}
 int main(int argc, char* argv[])
 {
 
@@ -558,6 +581,7 @@ int main(int argc, char* argv[])
         std::ofstream out(fn);
 
         int sphere_count=0;
+        sphere_count = sphere_cage_gen(sphere_count, 100000);
         int time2 = time(NULL);
 	srand(time2); //define random seed
 
@@ -567,7 +591,7 @@ int main(int argc, char* argv[])
 	double volume=0; //total volume occupied by spheres
 	
 	//Loop to attempt placement of NUM_SPHERES spheres
-	for(int i=sphere_count; i < NUM_SPHERES; i++)
+        for(int i=sphere_count; i < NUM_SPHERES; i++)
 	{
 		bool placed=false;
 
