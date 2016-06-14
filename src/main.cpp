@@ -519,6 +519,8 @@ int sphere_cage_gen(int num_spheres, double r)
 int main(int argc, char* argv[])
 {
 
+	std::default_random_engine generator;
+	std::normal_distribution<double> distribution((R_MAX+R_MIN)/2.0f, (R_MAX-R_MIN)/2);
         for(int i=0; i< argc; i++)
         {
             std::string arg = argv[i];
@@ -535,7 +537,7 @@ int main(int argc, char* argv[])
                 std::cout<< "No args implies hard-coded defaults." << std::endl;
                 return 0;
             }
-            else if(argc==7) {
+            else if(argc>=6) {
                 //std::cout << i << ": " <<arg <<std::endl;
                 switch(i)
                 {
@@ -543,7 +545,7 @@ int main(int argc, char* argv[])
                         //NUM_SPHERES = std::stoi(arg);
                         break;
                     case 2:
-                        X_MAX = std::stoi(arg);
+                            X_MAX = std::stoi(arg);
                         break;
                     case 3:
                         Y_MAX = std::stoi(arg);
@@ -552,13 +554,38 @@ int main(int argc, char* argv[])
                         Z_MAX = std::stoi(arg);
                         break;
                     case 5:
-                        R_MAX = std::stod(arg);
-                        break;
-                    case 6:
-                        R_MIN = std::stod(arg);
-                        break;
-                    default:
-                        break;
+                        //What distribution should I use?
+                            if(arg=="normal")
+                            {
+	                        std::normal_distribution<double> 
+                                    distribution(std::stod(argv[i+1]), std::stod(argv[i+2]));
+                                i+=2;
+                            }
+                            else if(arg=="gamma")
+                            {
+	                        std::gamma_distribution<double> 
+                                    distribution(std::stod(argv[i+1]), std::stod(argv[i+2]));
+                                i+=2;
+                            }
+                            else if(arg=="uniform")
+                            {
+	                        std::uniform_real_distribution<double> 
+                                    distribution(std::stod(argv[i+1]), std::stod(argv[i+2]));
+                                i+=2;
+                            }
+                            else if(arg=="exponential")
+                            {
+	                        std::exponential_distribution<double> 
+                                    distribution(std::stod(argv[i+1]));
+                                i+=2;
+                            }
+                            else if(arg=="chi_squared")
+                            {
+	                        std::chi_squared_distribution<double> 
+                                    distribution(std::stod(argv[i+1]));
+                                i+=2;
+                            }
+                            break;
                 }
             }
             else if(argc!=9){
@@ -585,8 +612,6 @@ int main(int argc, char* argv[])
         int time2 = time(NULL);
 	srand(time2); //define random seed
 
-	std::default_random_engine generator;
-	std::normal_distribution<double> distribution((R_MAX+R_MIN)/2.0f, (R_MAX-R_MIN)/2);
 
 	double volume=0; //total volume occupied by spheres
 	
@@ -600,7 +625,6 @@ int main(int argc, char* argv[])
 		//of a container. If this fails many times, give up.
 		int tries = 0;
 		double radius = distribution(generator);
-		radius = rand_range(R_MIN, R_MAX);
                 if(rand()%2==0)radius = R_MIN;
                 else radius = R_MAX;
 
