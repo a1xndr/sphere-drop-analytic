@@ -627,6 +627,7 @@ int main(int argc, char* argv[])
 		double radius = distribution(generator);
                 if(rand()%2==0)radius = R_MIN;
                 else radius = R_MAX;
+		radius = distribution(generator);
 
                 while(!placed && tries<1000000)
 		{
@@ -635,10 +636,6 @@ int main(int argc, char* argv[])
 			
 			//Pick random radius and x,y
 			vec3 pos;
-		        radius = rand_range(R_MIN, R_MAX);
-		        if(rand()%2==0)radius = R_MIN;
-                        else radius = R_MAX;
-		        radius = distribution(generator);
 			pos.x = rand_range(radius, X_MAX - radius);
 			pos.y = rand_range(radius, Y_MAX - radius);
 			pos.z = rand_range(radius, Z_MAX - radius);
