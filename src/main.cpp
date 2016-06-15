@@ -624,11 +624,10 @@ int main(int argc, char* argv[])
 		//sphere without immediate intersection(into a valid location) at the top
 		//of a container. If this fails many times, give up.
 		int tries = 0;
-		double radius = distribution(generator);
-                if(rand()%2==0)radius = R_MIN;
-                else radius = R_MAX;
+		double radius = -1;
+		while(radius <= 0){
 		radius = distribution(generator);
-
+		}
                 while(!placed && tries<1000000)
 		{
 			tries++;
