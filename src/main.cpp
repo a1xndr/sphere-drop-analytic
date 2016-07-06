@@ -520,7 +520,6 @@ int main(int argc, char* argv[])
 {
 
 	std::default_random_engine generator;
-	std::normal_distribution<double> distribution((R_MAX+R_MIN)/2.0f, (R_MAX-R_MIN)/2);
         for(int i=0; i< argc; i++)
         {
             std::string arg = argv[i];
