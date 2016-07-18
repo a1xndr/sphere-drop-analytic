@@ -27,6 +27,7 @@
 #include <iostream>
 #include "sphere_math.hpp"
 #include "sphere.hpp"
+#include "distribution_selector.hpp"
 #include <random>
 
 
@@ -518,7 +519,7 @@ int sphere_cage_gen(int num_spheres, double r)
 }
 int main(int argc, char* argv[])
 {
-
+        DistributionSelector distribution;
 	std::default_random_engine generator;
         for(int i=0; i< argc; i++)
         {
@@ -556,32 +557,32 @@ int main(int argc, char* argv[])
                         //What distribution should I use?
                             if(arg=="normal")
                             {
-	                        std::normal_distribution<double> 
-                                    distribution(std::stod(argv[i+1]), std::stod(argv[i+2]));
+                                distribution.set(DistributionSelector::normal,
+                                        std::stod(argv[i+1]), std::stod(argv[i+2]));
                                 i+=2;
                             }
                             else if(arg=="gamma")
                             {
-	                        std::gamma_distribution<double> 
-                                    distribution(std::stod(argv[i+1]), std::stod(argv[i+2]));
+                                distribution.set(DistributionSelector::gamma,
+                                        std::stod(argv[i+1]), std::stod(argv[i+2]));
                                 i+=2;
                             }
                             else if(arg=="uniform")
                             {
-	                        std::uniform_real_distribution<double> 
-                                    distribution(std::stod(argv[i+1]), std::stod(argv[i+2]));
+                                distribution.set(DistributionSelector::uniform,
+                                        std::stod(argv[i+1]), std::stod(argv[i+2]));
                                 i+=2;
                             }
                             else if(arg=="exponential")
                             {
-	                        std::exponential_distribution<double> 
-                                    distribution(std::stod(argv[i+1]));
+                                distribution.set(DistributionSelector::exponential,
+                                        std::stod(argv[i+1]));
                                 i+=2;
                             }
                             else if(arg=="chi_squared")
                             {
-	                        std::chi_squared_distribution<double> 
-                                    distribution(std::stod(argv[i+1]));
+                                distribution.set(DistributionSelector::chi_squared,
+                                        std::stod(argv[i+1]));
                                 i+=2;
                             }
                             break;
@@ -625,7 +626,7 @@ int main(int argc, char* argv[])
 		int tries = 0;
 		double radius = -1;
 		while(radius <= 0){
-		radius = distribution(generator);
+		radius = distribution.gen(generator);
 		}
                 while(!placed && tries<1000000)
 		{
@@ -673,7 +674,6 @@ int main(int argc, char* argv[])
                                         (spheres[check_intersect(s.radius-SMIDGE, s.pos, i, 1, 1, 1)].pos - s.pos).magnitude()
                                         -0.5*2<< std::endl;
 				    std::cout << "Intersection with: "<< check_intersect(s.radius-SMIDGE, s.pos, i, 1, 1, 1) << std::endl; 
-                                    
 				}
 			        if(s.pos.x-s.radius<0 || s.pos.y-s.radius<0 || s.pos.z-s.radius <0 || s.pos.x+s.radius>X_MAX || s.pos.y+s.radius>Y_MAX || s.pos.z+s.radius > Z_MAX)break;
                                 std::cout << "The contact array is currently: " << 
