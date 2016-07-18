@@ -626,7 +626,7 @@ int main(int argc, char* argv[])
 		int tries = 0;
 		double radius = -1;
 		while(radius <= 0){
-		radius = distribution.gen(generator);
+		radius = distribution.gen();
 		}
                 while(!placed && tries<1000000)
 		{

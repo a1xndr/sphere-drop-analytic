@@ -51,7 +51,7 @@ int DistributionSelector::set(dist_type dist, double a , double b)
     }
     type = dist;
 }
-double DistributionSelector::gen(std::default_random_engine generator)
+double DistributionSelector::gen()
 {
     switch(type)
     {
