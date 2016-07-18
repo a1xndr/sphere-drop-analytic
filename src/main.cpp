@@ -596,10 +596,11 @@ int main(int argc, char* argv[])
         time_t now = time(0);
         tm *tm = localtime(&now);
         std::ostringstream oss;
-        oss << "sda-coords-" << X_MAX <<"_" << Y_MAX <<"_"<< Z_MAX <<"_"<< 
-            R_MIN <<"_" << R_MAX << "_" 
+        oss << "sda-coords-" 
             << 1900+tm->tm_year << "-"<< 1+tm->tm_mon << "-"<< tm->tm_mday 
-            << "-"<< 1+tm->tm_hour << 1+tm->tm_min<<1+tm->tm_sec;
+            << "-"<< 1+tm->tm_hour << 1+tm->tm_min<<1+tm->tm_sec
+            << "-" << argv[5] << "-" << argv[6] << "-" 
+            << X_MAX <<"_" << Y_MAX <<"_"<< Z_MAX; 
         std::string fn = oss.str();
         std::cout << "fn is " << fn <<std::endl;
         std::cout << "argc is " << argc <<std::endl;
